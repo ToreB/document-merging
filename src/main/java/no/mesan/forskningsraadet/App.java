@@ -27,6 +27,7 @@ import org.docx4j.wml.Text;
  */
 public class App 
 {
+/*
 	private static final int HEADER = 1;
 	private static final int FOOTER = 2;
 	
@@ -162,4 +163,5 @@ public class App
 		File f = new File(target);
 		template.save(f);
 	}
+*/
 }
