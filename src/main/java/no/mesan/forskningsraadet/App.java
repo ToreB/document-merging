@@ -5,7 +5,9 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.xml.bind.JAXBElement;
 import javax.xml.bind.JAXBException;
@@ -34,16 +36,18 @@ public class App
 			WordprocessingMLPackage template = getTemplate("/Users/toreb/Documents/Forskningsraadet/template.docx");
 			
 			replaceHeaderFooterPlaceholder(template, "HEADER_PLACEHOLDER", "Dette er en header!", HEADER);
-			
-			replacePlaceholder(template, "TITLE_PLACEHOLDER", "Min Tittel");
-			replacePlaceholder(template, "CONTENT_PAGE1_PLACEHOLDER", "Dette er innholdet i dokumentet på side 1.");
-			replacePlaceholder(template, "CONTENT_PAGE2_PLACEHOLDER", "Dette er innholdet i dokumentet på side 2.");
-			replacePlaceholder(template, "BOLD_TEXT_PLACEHOLDER", "Dette skal komme i fet skrift");
-			replacePlaceholder(template, "BOLD_ITALIC_UNDERLINED_TEXT_PLACEHOLDER", "Dette skal komme i fet skrift");
-			replacePlaceholder(template, "HEADING_PAGE1_PLACEHOLDER", "Dette er en heading 2 på side 1");
-			replacePlaceholder(template, "HEADING_PAGE2_PLACEHOLDER", "Dette er en heading 1 på side 2");
-			
 			replaceHeaderFooterPlaceholder(template, "FOOTER_PLACEHOLDER", "Dette er en footer", FOOTER);
+			
+			Map<String, String> replacements = new HashMap<String, String>();
+			replacements.put("TITLE_PLACEHOLDER", "Min Tittel");
+			replacements.put("CONTENT_PAGE1_PLACEHOLDER", "Dette er innholdet i dokumentet på side 1.");
+			replacements.put("CONTENT_PAGE2_PLACEHOLDER", "Dette er innholdet i dokumentet på side 2.");
+			replacements.put("BOLD_TEXT_PLACEHOLDER", "Dette skal komme i fet skrift");
+			replacements.put("BOLD_ITALIC_UNDERLINED_TEXT_PLACEHOLDER", "Dette skal komme i bold, italic, underlined skrift");
+			replacements.put("HEADING_PAGE1_PLACEHOLDER", "Dette er en heading 2 på side 1");
+			replacements.put("HEADING_PAGE2_PLACEHOLDER", "Dette er en heading 1 på side 2");
+			
+			replacePlaceholder(template, replacements);
 			
 			writeDocxToStream(template, "/Users/toreb/Documents/Forskningsraadet/dokument.docx");
 			
@@ -78,6 +82,24 @@ public class App
 		}
 		
 		return result;
+	}
+	
+	private static void replacePlaceholder(WordprocessingMLPackage template, Map<String, String> replacements) {		
+		List<Object> texts = getAllElementFromObject(
+				template.getMainDocumentPart(), Text.class);
+		
+		for (Object text : texts) {
+			Text textElement = (Text) text;
+			String value = textElement.getValue();
+			
+			if (replacements.isEmpty()) break;
+			
+			if (replacements.keySet().contains(value)) {
+				String newValue = replacements.get(value);
+				textElement.setValue(newValue);				
+				replacements.remove(value);
+			}
+		}
 	}
 	
 	private static void replacePlaceholder(WordprocessingMLPackage template, String placeholder, String replacementText) {		
