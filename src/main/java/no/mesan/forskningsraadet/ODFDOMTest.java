@@ -1,64 +1,63 @@
 package no.mesan.forskningsraadet;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-
-import javax.xml.namespace.NamespaceContext;
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathFactory;
 
 import org.odftoolkit.odfdom.doc.OdfDocument;
 import org.odftoolkit.odfdom.doc.OdfTextDocument;
 import org.odftoolkit.odfdom.dom.OdfContentDom;
 import org.odftoolkit.odfdom.dom.element.OdfStyleBase;
 import org.odftoolkit.odfdom.dom.element.office.OfficeTextElement;
-import org.odftoolkit.odfdom.dom.element.text.TextPElement;
+import org.odftoolkit.odfdom.dom.element.text.TextSectionElement;
 import org.odftoolkit.odfdom.dom.style.props.OdfTextProperties;
 import org.odftoolkit.odfdom.incubator.doc.office.OdfOfficeStyles;
 import org.odftoolkit.odfdom.incubator.doc.text.OdfTextHeading;
 import org.odftoolkit.odfdom.incubator.doc.text.OdfTextParagraph;
 import org.odftoolkit.odfdom.incubator.search.TextNavigation;
 import org.odftoolkit.odfdom.incubator.search.TextSelection;
-import org.odftoolkit.odfdom.pkg.OdfElement;
-import org.odftoolkit.odfdom.pkg.OdfNamespace;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+
+import sun.misc.Cleaner;
 
 public class ODFDOMTest {
 
 	public static void main(String[] args) {
 		String path = "/Users/toreb/Documents/Forskningsraadet/";
-		/*String layoutTemplate = path + "template2.odt";
-		String output = path + "dokument2.odt";
-		createDocumentFromTemplate(layoutTemplate, output);*/
+		String layoutTemplate = path + "template3.odt";
+		String contentTemplate = path + "IMMedInnhold.odt";
+		String output = path + "dokument3.odt";
 		
-		generateContentTemplateWithData(path + "IMMedInnhold.odt");
+		//generateContentTemplateWithData(path + "IMMedInnhold.odt");
+		
+		createDocumentFromTemplateWithContent(layoutTemplate, contentTemplate, output);
 	}
 	
-	private static void createDocumentFromTemplateWithContent(String layoutTemplatePath, String contentTemplatePath, String outputPath) {
+	private static void createDocumentFromTemplateWithContent(String layoutTemplatePath, 
+																String contentTemplatePath, 
+																String outputPath) {
+		
 		Map<String, String> replacements = new HashMap<String, String>();
 		replacements.put("<%TITLE%>", "Min Tittel");
-		replacements.put("<%CONTENT_PAGE1%>", "Dette er innholdet i dokumentet på side 1.");
-		replacements.put("<%CONTENT_PAGE2%>", "Dette er innholdet i dokumentet på side 2.");
-		replacements.put("<%HEADING_PAGE1%>", "Dette er en heading 2 på side 1");
-		replacements.put("<%HEADING_PAGE2%>", "Dette er en heading 1 på side 2");
-		replacements.put("<%HEADER%>", "Dette er en header!");
+		replacements.put("<%HEADER_MIDDLE%>", "Dette er en header!");
+		replacements.put("<%HEADER_LEFT%>", "Venstre side i header");
+		replacements.put("<%HEADER_RIGHT%>", "Høyre side i header!");
 		replacements.put("<%FOOTER%>", "Dette er en footer");
 		
 		try {		
-			OdfTextDocument layoutTemplateDoc = OdfTextDocument.loadDocument(new File(layoutTemplatePath));			
+			OdfTextDocument layoutTemplateDoc = OdfTextDocument.loadDocument(new File(layoutTemplatePath));
+			OfficeTextElement layoutRoot = layoutTemplateDoc.getContentRoot();
 			System.out.println("Lastet inn utseendemal: " + layoutTemplatePath);
 			
 			OdfTextDocument contentTemplateDoc = OdfTextDocument.loadDocument(new File(contentTemplatePath));
+			System.out.println("Lastet inn innholdsmal: "+ contentTemplatePath);
 			
 			OfficeTextElement contents = contentTemplateDoc.getContentRoot();
+			
 			/*XPath xpath = XPathFactory.newInstance().newXPath();
 			TextPElement element = (TextPElement) xpath.evaluate("//text:p", contents, XPathConstants.NODE);
-			System.out.println(element);*/
-			
-			System.out.println(OdfElement.findFirstChildNode(TextPElement.class, contents));
+			System.out.println(element);*/		
 			
 			String regex = "<%([a-zA-Z0-9_#\\-]+)%>";
 			TextNavigation search = new TextNavigation(regex, layoutTemplateDoc);
@@ -74,6 +73,20 @@ public class ODFDOMTest {
 				
 				if (replacements.containsKey(text)) {
 					item.replaceWith(replacements.get(text));
+				} else if (text.equals("<%CONTENT%>")) {
+					item.replaceWith("");
+					
+					//TextSectionElement section = new TextSectionElement(layoutTemplateDoc.getContentDom());
+					//layoutTemplateDoc.getContentRoot().appendChild(section);
+					//section.setTextNameAttribute("Content from IM");
+					
+					NodeList nodes = contents.getChildNodes();
+					for(int i = 0; i < nodes.getLength(); i++) {
+						Node newNode = nodes.item(i).cloneNode(true);
+						Node adoptedNode = layoutTemplateDoc.getContentDom().adoptNode(newNode);
+						//section.appendChild(adoptedNode);
+						layoutRoot.appendChild(adoptedNode);
+					}
 				}
 			}
 			
@@ -81,6 +94,7 @@ public class ODFDOMTest {
 			System.out.println("Dokument lagret som: " + outputPath);
 			
 			layoutTemplateDoc.close();
+			contentTemplateDoc.close();
 			
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -101,16 +115,6 @@ public class ODFDOMTest {
 			OdfTextDocument layoutTemplateDoc = OdfTextDocument.loadDocument(new File(templatePath));
 			
 			System.out.println("Lastet inn utseendemal: " + templatePath);
-			
-			/*String contentTemplate = path + "InnholdsMalMedInnhold.odt";
-			OdfTextDocument contentTemplateDoc = OdfTextDocument.loadDocument(new File(contentTemplate));
-			
-			OfficeTextElement contents = contentTemplateDoc.getContentRoot();
-			XPath xpath = XPathFactory.newInstance().newXPath();
-			TextPElement element = (TextPElement) xpath.evaluate("//text:p[3]", contents, XPathConstants.NODE);
-			System.out.println(element);
-			
-			System.out.println(OdfElement.findFirstChildNode(TextPElement.class, contents));*/
 			
 			String regex = "<%([a-zA-Z0-9_#\\-]+)%>";
 			TextNavigation search = new TextNavigation(regex, layoutTemplateDoc);
@@ -145,12 +149,13 @@ public class ODFDOMTest {
 			OdfDocument doc = OdfTextDocument.newTextDocument();
 			OdfContentDom dom = doc.getContentDom();
 			OfficeTextElement officeText = (OfficeTextElement) doc.getContentRoot();
-			OdfOfficeStyles styles = doc.getOrCreateDocumentStyles();
 			
-			//Inserts a heading to be used as document title
+			cleanOutDocument(officeText);
+			
+			/*//Inserts a heading to be used as document title
 			OdfTextHeading heading = new OdfTextHeading(dom);
 			heading.addStyledContent("Heading_20_1", "Document title");		
-			officeText.appendChild(heading);		
+			officeText.appendChild(heading);*/
 			
 			String headingName = "Heading_20_2";
 			String headingText = "Paragraph";
@@ -189,10 +194,19 @@ public class ODFDOMTest {
 		}
 	}
 	
-	private static void setFontSize(OdfStyleBase style, String value)
-	{
+	private static void setFontSize(OdfStyleBase style, String value) {
 	    style.setProperty(OdfTextProperties.FontSize, value);
 	    style.setProperty(OdfTextProperties.FontSizeAsian, value);
 	    style.setProperty(OdfTextProperties.FontSizeComplex, value);
+	}
+	
+	private static void cleanOutDocument(OfficeTextElement element) {
+	    Node childNode = element.getFirstChild();
+	    
+	    while (childNode != null)
+	    {
+	        element.removeChild(childNode);
+	        childNode = element.getFirstChild();
+	    }
 	}
 }
