@@ -18,10 +18,10 @@ public class FletteGUI extends JFrame{
 	
 	private FileBrowserPanel filePanel;
 	
-	public FletteGUI() {
+	public FletteGUI(String defaultLayoutTemplate, String defaultContentTemplate) {
 		super("Flette dokumenter");
 		
-		filePanel = new FileBrowserPanel();
+		filePanel = new FileBrowserPanel(defaultLayoutTemplate, defaultContentTemplate);
 		add(filePanel, BorderLayout.NORTH);
 		
 		setDefaultCloseOperation(EXIT_ON_CLOSE);
@@ -40,7 +40,7 @@ public class FletteGUI extends JFrame{
 		private JButton btnBrowseLayout, btnBrowseContent;
 		private JTextField txtLayoutTemplate, txtContentTemplate;
 		
-		public FileBrowserPanel() {
+		public FileBrowserPanel(String defaultLayoutTemplate, String defaultContentTemplate) {
 			//TODO: Endre til gridbag layout
 			setLayout(new GridLayout(2, 3));
 			
@@ -48,10 +48,14 @@ public class FletteGUI extends JFrame{
 			lblContentTemplate = new JLabel("Innholdsmal: ");
 			
 			fileChooser = new JFileChooser();
-			fileChooser.setFileFilter(new FileNameExtensionFilter("OpenOffice", "odt"));
+			//fileChooser.setFileFilter(new FileNameExtensionFilter("OpenOffice", "odt"));
 			
-			txtContentTemplate = new JTextField();
-			txtLayoutTemplate = new JTextField();
+			txtContentTemplate = defaultContentTemplate == null ? 
+													new JTextField() : 
+													new JTextField(defaultContentTemplate);
+			txtLayoutTemplate = defaultLayoutTemplate == null ? 
+													new JTextField() :
+													new JTextField(defaultLayoutTemplate);
 			
 			String text = "Velg fil";
 			btnBrowseLayout = new JButton(text);
@@ -86,6 +90,9 @@ public class FletteGUI extends JFrame{
 	}
 	
 	public static void main(String[] args) {
-		new FletteGUI();
+		String path = "/media/sf_DATA_DRIVE/Documents/Jobb/Forskningsraadet/";
+		String layout = path + "template.docx";
+		String contents = path + "IMMedInnhold.docx";
+		new FletteGUI(layout, contents);
 	}
 }

@@ -27,7 +27,7 @@ public class ODFDOMTest {
 		String path = "/Users/toreb/Documents/Forskningsraadet/";
 		String layoutTemplate = path + "template3.odt";
 		String contentTemplate = path + "IMMedInnhold.odt";
-		String output = path + "dokument3.odt";
+		String output = path + "dokument3.doc";
 		
 		//generateContentTemplateWithData(path + "IMMedInnhold.odt");
 		
