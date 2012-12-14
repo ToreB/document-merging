@@ -37,23 +37,7 @@ public class App
 		String contents = path + "IMMedInnhold.docx";
     	
         try {
-			DocxDocument layoutTemplate = new DocxDocument(layout);
-			DocxDocument contentsTemplate = new DocxDocument(contents);
-			
-			layoutTemplate.replacePlaceholderWithDocumentContent("<%CONTENT%>", contentsTemplate);
-			
-			/*
-			Map<String, String> headerReplacements = new HashMap<String, String>();
-			headerReplacements.put("<%HEADER_MIDDLE%>", "Dette er en header!");
-			headerReplacements.put("<%HEADER_LEFT%>", "Venstre side i header");
-			headerReplacements.put("<%HEADER_RIGHT%>", "Høyre side i header!");
-			
-			layoutTemplate.replaceHeaderPlaceholders(headerReplacements);
-			layoutTemplate.replaceFooterPlaceholder("<%FOOTER%>", "Dette er en footer");
-			layoutTemplate.replacePlaceholder("<%TITLE%>", "Min Tittel");
-			
-			
-			layoutTemplate.writeToFile(path + "dokument.docx");*/
+			mergeDocuments(layout, contents, path + "dokument.docx");
 			
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
@@ -62,5 +46,24 @@ public class App
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+    }
+    
+    private static void mergeDocuments(String layoutTemplatePath, String contentTemplateWithContentPath, String outputFilePath) 
+    		throws IOException, Docx4JException {
+    	DocxDocument layoutTemplate = new DocxDocument(layoutTemplatePath);
+		DocxDocument contentsTemplate = new DocxDocument(contentTemplateWithContentPath);
+		
+		layoutTemplate.replacePlaceholderWithDocumentContent("<%CONTENT%>", contentsTemplate);		
+		
+		Map<String, String> headerReplacements = new HashMap<String, String>();
+		headerReplacements.put("<%HEADER_MIDDLE%>", "Dette er en header!");
+		headerReplacements.put("<%HEADER_LEFT%>", "Venstre side i header");
+		headerReplacements.put("<%HEADER_RIGHT%>", "Høyre side i header!");
+		
+		layoutTemplate.replaceHeaderPlaceholders(headerReplacements);
+		layoutTemplate.replaceFooterPlaceholder("<%FOOTER%>", "Dette er en footer");
+		layoutTemplate.replacePlaceholder("<%TITLE%>", "Min Tittel");			
+		
+		layoutTemplate.writeToFile(outputFilePath);
     }
 }

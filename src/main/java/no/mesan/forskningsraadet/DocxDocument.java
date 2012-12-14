@@ -18,8 +18,9 @@ import org.docx4j.openpackaging.exceptions.InvalidFormatException;
 import org.docx4j.openpackaging.packages.WordprocessingMLPackage;
 import org.docx4j.openpackaging.parts.WordprocessingML.FooterPart;
 import org.docx4j.openpackaging.parts.WordprocessingML.HeaderPart;
+import org.docx4j.openpackaging.parts.WordprocessingML.MainDocumentPart;
 import org.docx4j.wml.ContentAccessor;
-import org.docx4j.wml.P;
+import org.docx4j.wml.R;
 import org.docx4j.wml.Text;
 
 public class DocxDocument {
@@ -174,18 +175,26 @@ public class DocxDocument {
 	
 	public void replacePlaceholderWithDocumentContent(String placeholder, DocxDocument document) {
 		
-		List<Object> texts = getAllElementFromObject(this.document.getMainDocumentPart(), Text.class);
-		
-		for (Object text : texts) {
-			Text textElement = (Text) text;
-			
-			if (textElement.getValue().equals(placeholder)) {
-				JAXBElement<P> parent = (JAXBElement<P>) textElement.getParent();
-			}
+		MainDocumentPart documentPart = this.document.getMainDocumentPart();
+
+        String xpath = "//w:r[w:t[contains(text(),'" + placeholder + "')]]";
+        List<Object> list = null;
+		try {
+			list = documentPart.getJAXBNodesViaXPath(xpath, false);
+		} catch (JAXBException e) {
+			e.printStackTrace();
 		}
 		
-		/*for(Object element: document.getDocument().getMainDocumentPart().getContent()) {			
-			this.document.getMainDocumentPart().addObject(element);
-		}*/
+		//TODO: Make it able to handle multiple placeholders of the same value
+		for (Object element : list) {
+			R run = (R) element;
+			
+			//Gets the text element containing the placeholder
+			Text textElement = ((JAXBElement<Text>) run.getContent().get(0)).getValue();
+			textElement.setValue("");
+			
+			//Inputs contents from document
+			run.getContent().addAll(document.getDocument().getMainDocumentPart().getContent());
+		}
 	}
 }
