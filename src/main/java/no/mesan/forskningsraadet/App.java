@@ -21,7 +21,7 @@ public class App
     {
 		String path = "/media/sf_DATA_DRIVE/Documents/Jobb/Forskningsraadet/";
 		String layout = path + "template.docx";
-		String contents = path + "IMMedInnhold2.docx";
+		String contents = path + "IMMedInnhold.docx";
     	
         try {
 			DocxDocument docx = mergeDocuments(layout, contents);

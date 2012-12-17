@@ -19,7 +19,6 @@ import org.apache.log4j.spi.LoggerRepository;
 import org.docx4j.convert.out.pdf.PdfConversion;
 import org.docx4j.convert.out.pdf.viaXSLFO.Conversion;
 import org.docx4j.fonts.BestMatchingMapper;
-import org.docx4j.fonts.IdentityPlusMapper;
 import org.docx4j.model.structure.HeaderFooterPolicy;
 import org.docx4j.model.structure.SectionWrapper;
 import org.docx4j.openpackaging.exceptions.Docx4JException;
@@ -28,7 +27,9 @@ import org.docx4j.openpackaging.packages.WordprocessingMLPackage;
 import org.docx4j.openpackaging.parts.WordprocessingML.FooterPart;
 import org.docx4j.openpackaging.parts.WordprocessingML.HeaderPart;
 import org.docx4j.openpackaging.parts.WordprocessingML.MainDocumentPart;
+import org.docx4j.wml.Body;
 import org.docx4j.wml.ContentAccessor;
+import org.docx4j.wml.P;
 import org.docx4j.wml.R;
 import org.docx4j.wml.Text;
 
@@ -213,7 +214,7 @@ public class DocxDocument {
 		
 		MainDocumentPart documentPart = this.document.getMainDocumentPart();
 
-        String xpath = "//w:r[w:t[contains(text(),'" + placeholder + "')]]";
+        String xpath = "//w:p[w:r[w:t[contains(text(),'" + placeholder + "')]]]";
         List<Object> list = null;
 		try {
 			list = documentPart.getJAXBNodesViaXPath(xpath, false);
@@ -222,16 +223,22 @@ public class DocxDocument {
 		}
 		
 		//TODO: Make it able to handle multiple placeholders of the same value
-		//Will probably not work with multipleplaceholders at the moment
+		//Will probably not work with multiple placeholders at the moment
 		for (Object element : list) {
-			R run = (R) element;
+			P paragraph = (P) element;
 			
-			//Gets the text element containing the placeholder
-			Text textElement = ((JAXBElement<Text>) run.getContent().get(0)).getValue();
-			textElement.setValue("");
+			//Gets the body and the paragraph's position in the content list
+			Body body = (Body) paragraph.getParent();
+			int paragraphIndex = body.getContent().indexOf(paragraph);
 			
-			//Inputs contents from document
-			run.getContent().addAll(document.getDocument().getMainDocumentPart().getContent());
+			//Removes the paragraph
+			body.getContent().remove(paragraphIndex);
+			
+			//Inserts content from document
+			List<Object> documentElements = document.getDocument().getMainDocumentPart().getContent();
+			for(int i = 0; i < documentElements.size(); i++) {
+				body.getContent().add(paragraphIndex + i, documentElements.get(i));
+			}
 		}
 	}
 }

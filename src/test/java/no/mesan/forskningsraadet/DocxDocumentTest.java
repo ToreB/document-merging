@@ -40,8 +40,16 @@ public class DocxDocumentTest {
 
 	@Test
 	public void testWriteToFile_ShouldNotThrowException() {
+		writeToFile("testDocument.docx");
+	}
+	
+	@Test
+	public void testWriteToPDF_ShouldNotThrowException() {
+		writeToFile("testDocument.pdf");
+	}
+	
+	private void writeToFile(String filename) {
 		doc = new DocxDocument();
-		String filename = "testDocument.docx";
 		try {
 			doc.writeToFile(filename);
 		} catch (Exception e) {
