@@ -3,7 +3,9 @@ package no.mesan.forskningsraadet;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -11,6 +13,13 @@ import java.util.Map;
 import javax.xml.bind.JAXBElement;
 import javax.xml.bind.JAXBException;
 
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
+import org.apache.log4j.spi.LoggerRepository;
+import org.docx4j.convert.out.pdf.PdfConversion;
+import org.docx4j.convert.out.pdf.viaXSLFO.Conversion;
+import org.docx4j.fonts.BestMatchingMapper;
+import org.docx4j.fonts.IdentityPlusMapper;
 import org.docx4j.model.structure.HeaderFooterPolicy;
 import org.docx4j.model.structure.SectionWrapper;
 import org.docx4j.openpackaging.exceptions.Docx4JException;
@@ -60,7 +69,34 @@ public class DocxDocument {
 	
 	public void writeToFile(String filePath) throws IOException, Docx4JException {
 		File file = new File(filePath);
-		document.save(file);
+		
+		if (filePath.endsWith(".docx")) {
+			document.save(file);			
+		} else if (filePath.endsWith(".pdf")) {
+			try {
+				//Works better on windows
+				//document.setFontMapper(new IdentityPlusMapper());
+				
+				//Works better on linux and OS X
+				document.setFontMapper(new BestMatchingMapper());
+				
+				//Turns off logging, so that we don't get log messages in the
+				//created pdf document
+				Logger log = Logger.getLogger("org/docx4j/convert/out/pdf/viaXSLFO/");
+                LoggerRepository repository = log.getLoggerRepository();
+                repository.setThreshold(Level.OFF);
+				
+				PdfConversion conversion = new Conversion(document);
+				
+				OutputStream os = new FileOutputStream(file);
+				
+				conversion.output(os, null);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		} else {
+			throw new IllegalArgumentException("Currently only .docx and .pdf extensions are supported.");
+		}
 	}
 	
 	private List<Object> getAllElementFromObject(Object obj, Class<?> toSearch) {
@@ -186,6 +222,7 @@ public class DocxDocument {
 		}
 		
 		//TODO: Make it able to handle multiple placeholders of the same value
+		//Will probably not work with multipleplaceholders at the moment
 		for (Object element : list) {
 			R run = (R) element;
 			

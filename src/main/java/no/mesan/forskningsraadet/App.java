@@ -1,25 +1,12 @@
 package no.mesan.forskningsraadet;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
-import javax.xml.bind.JAXBElement;
-import javax.xml.bind.JAXBException;
-
-import org.docx4j.model.structure.HeaderFooterPolicy;
-import org.docx4j.model.structure.SectionWrapper;
 import org.docx4j.openpackaging.exceptions.Docx4JException;
 import org.docx4j.openpackaging.packages.WordprocessingMLPackage;
-import org.docx4j.openpackaging.parts.WordprocessingML.FooterPart;
-import org.docx4j.openpackaging.parts.WordprocessingML.HeaderPart;
-import org.docx4j.wml.ContentAccessor;
-import org.docx4j.wml.Text;
 
 /*
  * Some helper methods found in this example: 
@@ -34,10 +21,11 @@ public class App
     {
 		String path = "/media/sf_DATA_DRIVE/Documents/Jobb/Forskningsraadet/";
 		String layout = path + "template.docx";
-		String contents = path + "IMMedInnhold.docx";
+		String contents = path + "IMMedInnhold2.docx";
     	
         try {
-			mergeDocuments(layout, contents, path + "dokument.docx");
+			DocxDocument docx = mergeDocuments(layout, contents);
+			docx.writeToFile(path + "dokument.docx");
 			
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
@@ -48,7 +36,7 @@ public class App
 		}
     }
     
-    private static void mergeDocuments(String layoutTemplatePath, String contentTemplateWithContentPath, String outputFilePath) 
+    private static DocxDocument mergeDocuments(String layoutTemplatePath, String contentTemplateWithContentPath) 
     		throws IOException, Docx4JException {
     	DocxDocument layoutTemplate = new DocxDocument(layoutTemplatePath);
 		DocxDocument contentsTemplate = new DocxDocument(contentTemplateWithContentPath);
@@ -62,8 +50,8 @@ public class App
 		
 		layoutTemplate.replaceHeaderPlaceholders(headerReplacements);
 		layoutTemplate.replaceFooterPlaceholder("<%FOOTER%>", "Dette er en footer");
-		layoutTemplate.replacePlaceholder("<%TITLE%>", "Min Tittel");			
+		layoutTemplate.replacePlaceholder("<%TITLE%>", "Min Tittel");
 		
-		layoutTemplate.writeToFile(outputFilePath);
+		return layoutTemplate;
     }
 }
