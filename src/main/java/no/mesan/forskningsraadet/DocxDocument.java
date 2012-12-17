@@ -210,7 +210,7 @@ public class DocxDocument {
 		}
 	}
 	
-	public void replacePlaceholderWithDocumentContent(String placeholder, DocxDocument document) {
+	public void replacePlaceholderWithDocumentContent(String placeholder, WordprocessingMLPackage document) {
 		
 		MainDocumentPart documentPart = this.document.getMainDocumentPart();
 
@@ -222,8 +222,6 @@ public class DocxDocument {
 			e.printStackTrace();
 		}
 		
-		//TODO: Make it able to handle multiple placeholders of the same value
-		//Will probably not work with multiple placeholders at the moment
 		for (Object element : list) {
 			P paragraph = (P) element;
 			
@@ -235,10 +233,63 @@ public class DocxDocument {
 			body.getContent().remove(paragraphIndex);
 			
 			//Inserts content from document
-			List<Object> documentElements = document.getDocument().getMainDocumentPart().getContent();
+			List<Object> documentElements = document.getMainDocumentPart().getContent();
 			for(int i = 0; i < documentElements.size(); i++) {
 				body.getContent().add(paragraphIndex + i, documentElements.get(i));
 			}
 		}
+	}
+	
+	public List<Object> getElementsInsidePlaceholderBlock(String blockStart, String blockEnd) {
+		List<Object> result = new ArrayList<Object>();
+		
+		MainDocumentPart documentPart = document.getMainDocumentPart();
+		
+		//find all paragraphs
+		String xpath = "//w:p[w:r[w:t]]";
+		List<Object> list = null;
+		try {
+			list = documentPart.getJAXBNodesViaXPath(xpath, false);
+		} catch (JAXBException e) {
+			e.printStackTrace();
+		}
+		
+		boolean shouldAdd = false;
+		for(int i = 0; i < list.size(); i++) {
+			P paragraph = (P) list.get(i);
+			
+			//gets all run elemenets
+			List<Object> runs = getAllElementFromObject(paragraph, R.class);
+			
+			//loops through the run elements to find all the text elements,
+			//in case the text elements have been split up
+			String content = "";
+			for(Object obj: runs) {
+				R run = (R) obj;
+				
+				//gets all text elements
+				List<Object> texts = getAllElementFromObject(run, Text.class);
+				
+				for(Object text: texts) {
+					Text t = (Text) text;
+					content += t.getValue();
+				}
+			}
+			System.out.println(content);
+			
+			if (shouldAdd && !content.equals(blockEnd)) {
+				result.add(paragraph);
+			}
+			
+			if (content.equals(blockStart)) {
+				shouldAdd = true;
+			} else if (content.equals(blockEnd)) {
+				shouldAdd = false;
+				
+				return result;
+			}			
+		}
+		
+		return result;
 	}
 }

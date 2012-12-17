@@ -3,10 +3,10 @@ package no.mesan.forskningsraadet;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.docx4j.openpackaging.exceptions.Docx4JException;
-import org.docx4j.openpackaging.packages.WordprocessingMLPackage;
 
 /*
  * Some helper methods found in this example: 
@@ -14,8 +14,6 @@ import org.docx4j.openpackaging.packages.WordprocessingMLPackage;
  */
 public class App 
 {
-	private static final int HEADER = 1;
-	private static final int FOOTER = 2;
 	
     public static void main( String[] args )
     {
@@ -24,7 +22,19 @@ public class App
 		String contents = path + "IMMedInnhold.docx";
     	
         try {
-			DocxDocument docx = mergeDocuments(layout, contents);
+			//DocxDocument docx = mergeDocuments(layout, contents);
+        	
+        	DocxDocument docx = new DocxDocument();
+        	
+        	DocxDocument data = new DocxDocument(path + "IMMedInnhold2.docx");
+        	List<Object> title = data.getElementsInsidePlaceholderBlock("<title>", "</title>");
+        	List<Object> content = data.getElementsInsidePlaceholderBlock("<content>", "/content>");
+        	List<Object> images = data.getElementsInsidePlaceholderBlock("<images>", "</images>");
+        	
+        	docx.getDocument().getMainDocumentPart().getContent().addAll(title);
+        	docx.getDocument().getMainDocumentPart().getContent().addAll(content);
+        	docx.getDocument().getMainDocumentPart().getContent().addAll(images);
+        	
 			docx.writeToFile(path + "dokument.docx");
 			
 		} catch (FileNotFoundException e) {
@@ -41,7 +51,7 @@ public class App
     	DocxDocument layoutTemplate = new DocxDocument(layoutTemplatePath);
 		DocxDocument contentsTemplate = new DocxDocument(contentTemplateWithContentPath);
 		
-		layoutTemplate.replacePlaceholderWithDocumentContent("<%CONTENT%>", contentsTemplate);		
+		layoutTemplate.replacePlaceholderWithDocumentContent("<%CONTENT%>", contentsTemplate.getDocument());		
 		
 		Map<String, String> headerReplacements = new HashMap<String, String>();
 		headerReplacements.put("<%HEADER_MIDDLE%>", "Dette er en header!");
