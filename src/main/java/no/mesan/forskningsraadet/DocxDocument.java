@@ -262,7 +262,6 @@ public class DocxDocument {
 			e.printStackTrace();
 		}
 		
-		boolean shouldAdd = false;
 		int startIndex = 0;
 		int endIndex = 0;
 		for(int i = 0; i < list.size(); i++) {
@@ -273,7 +272,7 @@ public class DocxDocument {
 			
 			//loops through the run elements to find all the text elements,
 			//in case the text elements have been split up
-			String content = "";
+			StringBuilder contentBuilder = new StringBuilder();
 			for(Object obj: runs) {
 				R run = (R) obj;
 				
@@ -283,28 +282,20 @@ public class DocxDocument {
 				//Append the values of each text element
 				for(Object text: texts) {
 					Text t = (Text) text;
-					content += t.getValue();
+					contentBuilder.append(t.getValue());
 				}
 			}
 			
-			if (shouldAdd && !content.equals(blockEnd)) {
-				//Adds a deep copy of the paragraph, to preserve the styling
-				P deepCopy = XmlUtils.deepCopy(paragraph);
-				
-				this.document.getMainDocumentPart().getContent().add(deepCopy);
-			}
-			
-			if (content.equals(blockStart)) {
-				shouldAdd = true;
-				startIndex = documentPart.getContent().indexOf(paragraph);
-			} else if (content.equals(blockEnd)) {
-				shouldAdd = false;
+			if (contentBuilder.toString().equals(blockStart)) {
+				startIndex = documentPart.getContent().indexOf(paragraph) + 1;
+			} else if (contentBuilder.toString().equals(blockEnd)) {
 				endIndex = documentPart.getContent().indexOf(paragraph);
 				
+				//Gets all the elements inside the block
+				List<Object> elementsToAdd = documentPart.getContent().subList(startIndex, endIndex);
 				
-				
-				//Uncomment this line to prevent finding more than one matching block
-				//break;
+				//Adds them to the document	
+				this.document.getMainDocumentPart().getContent().addAll(elementsToAdd);
 			}			
 		}
 		
