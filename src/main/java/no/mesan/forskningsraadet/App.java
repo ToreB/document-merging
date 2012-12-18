@@ -12,28 +12,16 @@ import org.docx4j.openpackaging.exceptions.Docx4JException;
  * Some helper methods found in this example: 
  * http://www.javacodegeeks.com/2012/07/java-word-docx-documents-with-docx4j.html
  */
-public class App 
-{
-	
-    public static void main( String[] args )
-    {
+public class App {
+    public static void main( String[] args ) {
 		String path = "/media/sf_DATA_DRIVE/Documents/Jobb/Forskningsraadet/";
 		String layout = path + "template.docx";
 		String contents = path + "IMMedInnhold.docx";
     	
         try {
 			//DocxDocument docx = mergeDocuments(layout, contents);
-        	
-        	DocxDocument docx = new DocxDocument();
-        	
-        	DocxDocument data = new DocxDocument(path + "IMMedInnhold2.docx");
-        	List<Object> title = data.getElementsInsidePlaceholderBlock("<title>", "</title>");
-        	List<Object> content = data.getElementsInsidePlaceholderBlock("<content>", "/content>");
-        	List<Object> images = data.getElementsInsidePlaceholderBlock("<images>", "</images>");
-        	
-        	docx.getDocument().getMainDocumentPart().getContent().addAll(title);
-        	docx.getDocument().getMainDocumentPart().getContent().addAll(content);
-        	docx.getDocument().getMainDocumentPart().getContent().addAll(images);
+       	
+        	DocxDocument docx = insertFromPlaceholderBlocks(path);
         	
 			docx.writeToFile(path + "dokument.docx");
 			
@@ -45,6 +33,22 @@ public class App
 			e.printStackTrace();
 		}
     }
+
+	private static DocxDocument insertFromPlaceholderBlocks(String path)
+			throws FileNotFoundException, Docx4JException {
+		DocxDocument docx = new DocxDocument();
+		
+		DocxDocument data = new DocxDocument(path + "IMMedInnhold2.docx");
+		List<Object> title = data.getElementsInsidePlaceholderBlock("<title>", "</title>");
+		List<Object> content = data.getElementsInsidePlaceholderBlock("<content>", "</content>");
+		List<Object> images = data.getElementsInsidePlaceholderBlock("<images>", "</images>");
+		
+		docx.getDocument().getMainDocumentPart().getContent().addAll(title);
+		docx.getDocument().getMainDocumentPart().getContent().addAll(content);
+		docx.getDocument().getMainDocumentPart().getContent().addAll(images);
+		
+		return docx;
+	}
     
     private static DocxDocument mergeDocuments(String layoutTemplatePath, String contentTemplateWithContentPath) 
     		throws IOException, Docx4JException {

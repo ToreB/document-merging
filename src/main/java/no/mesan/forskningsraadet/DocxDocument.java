@@ -16,6 +16,7 @@ import javax.xml.bind.JAXBException;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.log4j.spi.LoggerRepository;
+import org.docx4j.XmlUtils;
 import org.docx4j.convert.out.pdf.PdfConversion;
 import org.docx4j.convert.out.pdf.viaXSLFO.Conversion;
 import org.docx4j.fonts.BestMatchingMapper;
@@ -31,6 +32,7 @@ import org.docx4j.wml.Body;
 import org.docx4j.wml.ContentAccessor;
 import org.docx4j.wml.P;
 import org.docx4j.wml.R;
+import org.docx4j.wml.RPr;
 import org.docx4j.wml.Text;
 
 public class DocxDocument {
@@ -81,7 +83,7 @@ public class DocxDocument {
 				//Works better on linux and OS X
 				document.setFontMapper(new BestMatchingMapper());
 				
-				//Turns off logging, so that we don't get log messages in the
+				//Turns off logging, to prevent getting log messages in the
 				//created pdf document
 				Logger log = Logger.getLogger("org/docx4j/convert/out/pdf/viaXSLFO/");
                 LoggerRepository repository = log.getLoggerRepository();
@@ -174,14 +176,14 @@ public class DocxDocument {
 			}
 			
 			for (int i = 0; i < list.size(); i++) {
-				org.docx4j.wml.R r = (org.docx4j.wml.R) list.get(i);
-				org.docx4j.wml.P parent = (org.docx4j.wml.P) r.getParent();
-				org.docx4j.wml.RPr rpr = r.getRPr();
-				int index = parent.getContent().indexOf(r);
-				parent.getContent().remove(r);
+				R run = (R) list.get(i);
+				P parent = (P) run.getParent();
+				RPr rpr = run.getRPr();
+				int index = parent.getContent().indexOf(run);
+				parent.getContent().remove(run);
 
-				org.docx4j.wml.Text addedTmpText = factory.createText();
-				org.docx4j.wml.R mainR = factory.createR();
+				Text addedTmpText = factory.createText();
+				R mainR = factory.createR();
 				mainR.setRPr(rpr);
 				addedTmpText.setValue(replacementText);
 				mainR.getContent().add(addedTmpText);
@@ -270,15 +272,16 @@ public class DocxDocument {
 				//gets all text elements
 				List<Object> texts = getAllElementFromObject(run, Text.class);
 				
+				//Append the values of each text element
 				for(Object text: texts) {
 					Text t = (Text) text;
 					content += t.getValue();
 				}
 			}
-			System.out.println(content);
 			
 			if (shouldAdd && !content.equals(blockEnd)) {
-				result.add(paragraph);
+				//Adds a deep copy of the paragraph, to preserve the styling
+				result.add(XmlUtils.deepCopy(paragraph));
 			}
 			
 			if (content.equals(blockStart)) {
@@ -286,7 +289,8 @@ public class DocxDocument {
 			} else if (content.equals(blockEnd)) {
 				shouldAdd = false;
 				
-				return result;
+				//Uncomment this line to prevent finding more than one matching block
+				//return result;
 			}			
 		}
 		
