@@ -3,6 +3,7 @@ package no.mesan.forskningsraadet;
 import static org.junit.Assert.*;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 
 import org.docx4j.openpackaging.exceptions.Docx4JException;
@@ -48,7 +49,7 @@ public class DocxDocumentTest {
 		writeToFile("testDocument.pdf");
 	}
 	
-	private void writeToFile(String filename) {
+	private void writeToFile(String filename) {	
 		doc = new DocxDocument();
 		try {
 			doc.writeToFile(filename);

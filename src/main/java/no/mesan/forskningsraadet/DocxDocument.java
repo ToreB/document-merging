@@ -28,11 +28,16 @@ import org.docx4j.openpackaging.packages.WordprocessingMLPackage;
 import org.docx4j.openpackaging.parts.WordprocessingML.FooterPart;
 import org.docx4j.openpackaging.parts.WordprocessingML.HeaderPart;
 import org.docx4j.openpackaging.parts.WordprocessingML.MainDocumentPart;
+import org.docx4j.openpackaging.parts.WordprocessingML.StyleDefinitionsPart;
 import org.docx4j.wml.Body;
 import org.docx4j.wml.ContentAccessor;
 import org.docx4j.wml.P;
+import org.docx4j.wml.PPr;
+import org.docx4j.wml.PPrBase.PStyle;
 import org.docx4j.wml.R;
 import org.docx4j.wml.RPr;
+import org.docx4j.wml.Style;
+import org.docx4j.wml.Styles;
 import org.docx4j.wml.Text;
 
 public class DocxDocument {
@@ -43,6 +48,8 @@ public class DocxDocument {
 	private WordprocessingMLPackage document;
 	
 	public DocxDocument() {
+		/*String filePath = "newWordDocumentTemplate.docx";
+		document = WordprocessingMLPackage.load(new FileInputStream(filePath));*/
 		try {
 			document = WordprocessingMLPackage.createPackage();
 		} catch (InvalidFormatException e) {
@@ -242,8 +249,7 @@ public class DocxDocument {
 		}
 	}
 	
-	public List<Object> getElementsInsidePlaceholderBlock(String blockStart, String blockEnd) {
-		List<Object> result = new ArrayList<Object>();
+	public void insertElementsFromContentBlock(WordprocessingMLPackage document, String blockStart, String blockEnd) {
 		
 		MainDocumentPart documentPart = document.getMainDocumentPart();
 		
@@ -257,6 +263,8 @@ public class DocxDocument {
 		}
 		
 		boolean shouldAdd = false;
+		int startIndex = 0;
+		int endIndex = 0;
 		for(int i = 0; i < list.size(); i++) {
 			P paragraph = (P) list.get(i);
 			
@@ -281,19 +289,45 @@ public class DocxDocument {
 			
 			if (shouldAdd && !content.equals(blockEnd)) {
 				//Adds a deep copy of the paragraph, to preserve the styling
-				result.add(XmlUtils.deepCopy(paragraph));
+				P deepCopy = XmlUtils.deepCopy(paragraph);
+				
+				this.document.getMainDocumentPart().getContent().add(deepCopy);
 			}
 			
 			if (content.equals(blockStart)) {
 				shouldAdd = true;
+				startIndex = documentPart.getContent().indexOf(paragraph);
 			} else if (content.equals(blockEnd)) {
 				shouldAdd = false;
+				endIndex = documentPart.getContent().indexOf(paragraph);
+				
+				
 				
 				//Uncomment this line to prevent finding more than one matching block
-				//return result;
+				//break;
 			}			
 		}
 		
-		return result;
+		//Adds styles
+		addAllStylesFromDocument(document);
+	}
+	
+	/**
+	 * Copy style definitions from a document into this document, in case we copy elements
+	 * from a document and want to preserve their original styling.
+	 * 
+	 * @param document to copy styles from
+	 */
+	private void addAllStylesFromDocument(WordprocessingMLPackage document) {
+		List<Style> stylesToCopy = 
+			document.getMainDocumentPart().getStyleDefinitionsPart().getJaxbElement().getStyle();
+		List<Style> currentDocumentStyles = 
+			this.document.getMainDocumentPart().getStyleDefinitionsPart().getJaxbElement().getStyle();
+		
+		for(Style style: stylesToCopy) {
+			if (!currentDocumentStyles.contains(style)) {
+				currentDocumentStyles.add(style);
+			}
+		}
 	}
 }

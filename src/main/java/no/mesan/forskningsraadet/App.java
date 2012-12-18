@@ -1,9 +1,9 @@
 package no.mesan.forskningsraadet;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.docx4j.openpackaging.exceptions.Docx4JException;
@@ -21,7 +21,7 @@ public class App {
         try {
 			//DocxDocument docx = mergeDocuments(layout, contents);
        	
-        	DocxDocument docx = insertFromPlaceholderBlocks(path);
+        	DocxDocument docx = insertFromPlaceholderBlocks(path + "IMMedInnhold2.docx");
         	
 			docx.writeToFile(path + "dokument.docx");
 			
@@ -34,18 +34,14 @@ public class App {
 		}
     }
 
-	private static DocxDocument insertFromPlaceholderBlocks(String path)
+	private static DocxDocument insertFromPlaceholderBlocks(String documentWithBLocks)
 			throws FileNotFoundException, Docx4JException {
 		DocxDocument docx = new DocxDocument();
 		
-		DocxDocument data = new DocxDocument(path + "IMMedInnhold2.docx");
-		List<Object> title = data.getElementsInsidePlaceholderBlock("<title>", "</title>");
-		List<Object> content = data.getElementsInsidePlaceholderBlock("<content>", "</content>");
-		List<Object> images = data.getElementsInsidePlaceholderBlock("<images>", "</images>");
-		
-		docx.getDocument().getMainDocumentPart().getContent().addAll(title);
-		docx.getDocument().getMainDocumentPart().getContent().addAll(content);
-		docx.getDocument().getMainDocumentPart().getContent().addAll(images);
+		DocxDocument data = new DocxDocument(documentWithBLocks);
+		docx.insertElementsFromContentBlock(data.getDocument(), "<title>", "</title>");
+		docx.insertElementsFromContentBlock(data.getDocument(), "<content>", "</content>");
+		docx.insertElementsFromContentBlock(data.getDocument(), "<images>", "</images>");
 		
 		return docx;
 	}
