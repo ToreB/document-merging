@@ -7,10 +7,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import javax.xml.bind.JAXBElement;
 import javax.xml.bind.JAXBException;
@@ -18,7 +17,6 @@ import javax.xml.bind.JAXBException;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.log4j.spi.LoggerRepository;
-import org.docx4j.XmlUtils;
 import org.docx4j.convert.out.pdf.PdfConversion;
 import org.docx4j.convert.out.pdf.viaXSLFO.Conversion;
 import org.docx4j.fonts.BestMatchingMapper;
@@ -27,19 +25,19 @@ import org.docx4j.model.structure.SectionWrapper;
 import org.docx4j.openpackaging.exceptions.Docx4JException;
 import org.docx4j.openpackaging.exceptions.InvalidFormatException;
 import org.docx4j.openpackaging.packages.WordprocessingMLPackage;
+import org.docx4j.openpackaging.parts.Part;
+import org.docx4j.openpackaging.parts.PartName;
+import org.docx4j.openpackaging.parts.Parts;
 import org.docx4j.openpackaging.parts.WordprocessingML.FooterPart;
 import org.docx4j.openpackaging.parts.WordprocessingML.HeaderPart;
 import org.docx4j.openpackaging.parts.WordprocessingML.MainDocumentPart;
-import org.docx4j.openpackaging.parts.WordprocessingML.StyleDefinitionsPart;
+import org.docx4j.openpackaging.parts.relationships.RelationshipsPart.AddPartBehaviour;
 import org.docx4j.wml.Body;
 import org.docx4j.wml.ContentAccessor;
 import org.docx4j.wml.P;
-import org.docx4j.wml.PPr;
-import org.docx4j.wml.PPrBase.PStyle;
 import org.docx4j.wml.R;
 import org.docx4j.wml.RPr;
 import org.docx4j.wml.Style;
-import org.docx4j.wml.Styles;
 import org.docx4j.wml.Text;
 
 public class DocxDocument {
@@ -266,6 +264,31 @@ public class DocxDocument {
 				
 				//Adds them to the document	
 				this.document.getMainDocumentPart().getContent().addAll(elementsToAdd);
+				
+				//Copy images, if any
+				//TODO: Update relationships between image and image xml
+				Parts parts = document.getParts();
+				
+				Map<PartName, Part> partsMap = parts.getParts();
+				Iterator<PartName> iterator = partsMap.keySet().iterator();
+				while(iterator.hasNext()) {
+					PartName name = iterator.next();
+					
+					//not sure if more any other extension than png is used, so
+					//may be more than the ones listed
+					if (name.getExtension().equals("png") || 
+						name.getExtension().equals("jpg") ||
+						name.getExtension().equals("jpeg")) {
+						
+						try {
+							this.document.addTargetPart(partsMap.get(name), 
+											AddPartBehaviour.OVERWRITE_IF_NAME_EXISTS);
+						} catch (InvalidFormatException e) {
+							e.printStackTrace();
+						}
+					}
+				}
+				
 			} /*else {
 				int start = content.indexOf(blockStart);
 				int end = content.indexOf(blockEnd);
