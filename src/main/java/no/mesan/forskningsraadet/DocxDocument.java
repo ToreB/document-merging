@@ -273,19 +273,6 @@ public class DocxDocument {
 						return;
 					}
 				}
-				
-				/*R run = (R) list.get(i);
-				P parent = (P) run.getParent();
-				RPr rpr = run.getRPr();
-				int index = parent.getContent().indexOf(run);
-				parent.getContent().remove(run);
-
-				Text addedTmpText = factory.createText();
-				R mainR = factory.createR();
-				mainR.setRPr(rpr);
-				addedTmpText.setValue(replacementText);
-				mainR.getContent().add(addedTmpText);
-				parent.getContent().add(index, mainR);*/
 			}
 		}
 	}
@@ -315,7 +302,7 @@ public class DocxDocument {
 		MainDocumentPart documentPart = this.document.getMainDocumentPart();
 
         //String xpath = "//w:p[w:r[w:t[contains(text(),'" + placeholder + "')]]]";
-        List<P> paragraphs = getAllParagraphsContainingPlaceholder(document, placeholder);
+        List<P> paragraphs = getAllParagraphsContainingPlaceholder(this.document, placeholder);
 		
 		for (P paragraph: paragraphs) {
 			
