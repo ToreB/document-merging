@@ -47,9 +47,9 @@ public class DocxDocument {
 	private String filePath;
 	private WordprocessingMLPackage document;
 	
+	//TODO: Make all the replacePlaceholder methods be able to handle text split into more than one text element.
+	
 	public DocxDocument() {
-		/*String filePath = "newWordDocumentTemplate.docx";
-		document = WordprocessingMLPackage.load(new FileInputStream(filePath));*/
 		try {
 			document = WordprocessingMLPackage.createPackage();
 		} catch (InvalidFormatException e) {
@@ -87,11 +87,11 @@ public class DocxDocument {
 				//Works better on windows
 				//document.setFontMapper(new IdentityPlusMapper());
 				
-				//Works better on linux and OS X
+				//Works better on Linux and OS X
 				document.setFontMapper(new BestMatchingMapper());
 				
 				//Turns off logging, to prevent getting log messages in the
-				//created pdf document
+				//created PDF document
 				Logger log = Logger.getLogger("org/docx4j/convert/out/pdf/viaXSLFO/");
                 LoggerRepository repository = log.getLoggerRepository();
                 repository.setThreshold(Level.OFF);
@@ -182,6 +182,9 @@ public class DocxDocument {
 				list = new ArrayList<Object>();
 			}
 			
+			//There may be a better way to do these operations,
+			//haven't looked that much on it, just shamelessly copied a working
+			//example from the internet...
 			for (int i = 0; i < list.size(); i++) {
 				R run = (R) list.get(i);
 				P parent = (P) run.getParent();
@@ -223,16 +226,10 @@ public class DocxDocument {
 		
 		MainDocumentPart documentPart = this.document.getMainDocumentPart();
 
-        String xpath = "//w:p[w:r[w:t[contains(text(),'" + placeholder + "')]]]";
-        List<Object> list = null;
-		try {
-			list = documentPart.getJAXBNodesViaXPath(xpath, false);
-		} catch (JAXBException e) {
-			e.printStackTrace();
-		}
+        //String xpath = "//w:p[w:r[w:t[contains(text(),'" + placeholder + "')]]]";
+        List<P> paragraphs = getAllParagraphsContainingPlaceholder(document, placeholder);
 		
-		for (Object element : list) {
-			P paragraph = (P) element;
+		for (P paragraph: paragraphs) {
 			
 			//Gets the body and the paragraph's position in the content list
 			Body body = (Body) paragraph.getParent();
@@ -247,6 +244,8 @@ public class DocxDocument {
 				body.getContent().add(paragraphIndex + i, documentElements.get(i));
 			}
 		}
+		
+		addAllStylesFromDocument(document);
 	}
 	
 	public void insertElementsFromContentBlock(WordprocessingMLPackage document, String blockStart, String blockEnd) {
@@ -267,28 +266,11 @@ public class DocxDocument {
 		for(int i = 0; i < list.size(); i++) {
 			P paragraph = (P) list.get(i);
 			
-			//gets all run elemenets
-			List<Object> runs = getAllElementFromObject(paragraph, R.class);
+			String content = getAllTextInParagraph(paragraph);
 			
-			//loops through the run elements to find all the text elements,
-			//in case the text elements have been split up
-			StringBuilder contentBuilder = new StringBuilder();
-			for(Object obj: runs) {
-				R run = (R) obj;
-				
-				//gets all text elements
-				List<Object> texts = getAllElementFromObject(run, Text.class);
-				
-				//Append the values of each text element
-				for(Object text: texts) {
-					Text t = (Text) text;
-					contentBuilder.append(t.getValue());
-				}
-			}
-			
-			if (contentBuilder.toString().equals(blockStart)) {
+			if (content.equals(blockStart)) {
 				startIndex = documentPart.getContent().indexOf(paragraph) + 1;
-			} else if (contentBuilder.toString().equals(blockEnd)) {
+			} else if (content.equals(blockEnd)) {
 				endIndex = documentPart.getContent().indexOf(paragraph);
 				
 				//Gets all the elements inside the block
@@ -299,13 +281,13 @@ public class DocxDocument {
 			}			
 		}
 		
-		//Adds styles
 		addAllStylesFromDocument(document);
 	}
 	
 	/**
 	 * Copy style definitions from a document into this document, in case we copy elements
-	 * from a document and want to preserve their original styling.
+	 * from a document which is using different styles than this document, and we want to 
+	 * preserve the original styling.
 	 * 
 	 * @param document to copy styles from
 	 */
@@ -320,5 +302,67 @@ public class DocxDocument {
 				currentDocumentStyles.add(style);
 			}
 		}
+	}
+	
+	/**
+	 * Sometimes the text content in a paragraph is split into several
+	 * elements. This is a helper method to get all the text content of a
+	 * paragraph as a single string.
+	 * 
+	 * @param a paragraph
+	 * @return all the text content of a paragraph as a String
+	 */
+	private String getAllTextInParagraph(P paragraph) {
+		//gets all run elemenets
+		List<Object> runs = getAllElementFromObject(paragraph, R.class);
+		
+		//loops through the run elements to find all the text elements,
+		//in case the text elements have been split up
+		StringBuilder contentBuilder = new StringBuilder();
+		for(Object obj: runs) {
+			R run = (R) obj;
+			
+			//gets all text elements
+			List<Object> texts = getAllElementFromObject(run, Text.class);
+			
+			//Append the values of each text element
+			for(Object text: texts) {
+				Text t = (Text) text;
+				contentBuilder.append(t.getValue());
+			}
+		}
+		
+		return contentBuilder.toString();
+	}
+	
+	/**
+	 * Searches a document for all paragraphs who's content equals the placeholder
+	 * text.
+	 * 
+	 * @param document to search
+	 * @param placeholder to search for
+	 * @return a list of paragraphs which contents are the placeholder text
+	 */
+	private List<P> getAllParagraphsContainingPlaceholder(WordprocessingMLPackage document, String placeholder) {
+		String xpath = "//w:p[w:r[w:t]]";
+		List<Object> list = null;
+		try {
+			list = document.getMainDocumentPart().getJAXBNodesViaXPath(xpath, false);
+		} catch (JAXBException e) {
+			e.printStackTrace();
+		}
+		
+		//Finds all the paragraphs that has text matching the placeholder text
+		List<P> paragraphs = new ArrayList<P>();
+		for(Object obj: list) {
+			P paragraph = (P) obj;
+			String content = getAllTextInParagraph(paragraph);
+			
+			if (content.equals(placeholder)) {
+				paragraphs.add(paragraph);
+			}
+		}
+		
+		return paragraphs;
 	}
 }

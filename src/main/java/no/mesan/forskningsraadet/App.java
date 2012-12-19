@@ -1,6 +1,5 @@
 package no.mesan.forskningsraadet;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.HashMap;
@@ -8,10 +7,6 @@ import java.util.Map;
 
 import org.docx4j.openpackaging.exceptions.Docx4JException;
 
-/*
- * Some helper methods found in this example: 
- * http://www.javacodegeeks.com/2012/07/java-word-docx-documents-with-docx4j.html
- */
 public class App {
     public static void main( String[] args ) {
 		String path = "/media/sf_DATA_DRIVE/Documents/Jobb/Forskningsraadet/";
@@ -19,9 +14,9 @@ public class App {
 		String contents = path + "IMMedInnhold.docx";
     	
         try {
-			//DocxDocument docx = mergeDocuments(layout, contents);
+			DocxDocument docx = mergeDocuments(layout, contents);
        	
-        	DocxDocument docx = insertFromPlaceholderBlocks(path + "IMMedInnhold2.docx");
+        	//DocxDocument docx = insertFromPlaceholderBlocks(path + "IMMedInnhold2.docx");
         	
 			docx.writeToFile(path + "dokument.docx");
 			
