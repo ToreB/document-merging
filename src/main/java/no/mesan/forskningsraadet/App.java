@@ -14,9 +14,9 @@ public class App {
 		String contents = path + "IMMedInnhold.docx";
     	
         try {
-			DocxDocument docx = mergeDocuments(layout, contents);
+			//DocxDocument docx = mergeDocuments(layout, contents);
        	
-        	//DocxDocument docx = insertFromPlaceholderBlocks(path + "IMMedInnhold2.docx");
+        	DocxDocument docx = insertFromPlaceholderBlocks(path + "FlettemotorData.docx");
         	
 			docx.writeToFile(path + "dokument.docx");
 			

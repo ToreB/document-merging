@@ -162,7 +162,6 @@ public class DocxDocument {
 	
 	private void replaceHeaderFooterPlaceholder(String placeholder, String replacementText, int option) {
 		List<SectionWrapper> sectionWrappers = document.getDocumentModel().getSections();
-		org.docx4j.wml.ObjectFactory factory = new org.docx4j.wml.ObjectFactory();
 		
 		for (SectionWrapper sw : sectionWrappers) {	
 			HeaderFooterPolicy hfp = sw.getHeaderFooterPolicy();
@@ -192,87 +191,7 @@ public class DocxDocument {
 			for (Object p: list) {
 				P paragraph = (P) p;
 				
-				//gets all the runs
-				List<Object> runs = getAllElementFromObject(paragraph, R.class);
-				
-				//loops through all the runs in the paragraph to search for
-				//the placeholder
-				String content = "";
-				int startIndex = 0, endIndex = 0;
-				boolean append = false;
-				R startRun = null, endRun = null;
-				RPr rpr = null;
-				for(Object r: runs) {
-					R run = (R) r;
-					
-					//gets all the texts, not sure if there will ever be more than one
-					List<Object> texts = getAllElementFromObject(run, Text.class);
-					
-					for(Object t: texts) {
-						Text text = (Text) t;
-						String textContent = text.getValue();
-						
-						startIndex = textContent.indexOf(PLACEHOLDER_START);						
-						endIndex = textContent.indexOf(PLACEHOLDER_END);
-						
-						//Checks if the text contains the whole placeholder
-						if (startIndex != -1 && endIndex != -1) {
-							content = textContent.substring(startIndex, endIndex + 1);
-							
-							if (content.trim().equals(placeholder)) {
-								text.setValue(replacementText);
-								
-								return;
-							}
-						} 
-						//only start of the placeholder
-						else if (startIndex != -1 && endIndex == -1) {
-							append = true;
-							String sub = textContent.substring(startIndex);
-							content += sub;
-							//text.setValue(text.getValue().replace(sub, ""));
-							rpr = run.getRPr();
-							startRun = run;
-						}
-						//only the end of the placeholder
-						else if (startIndex == -1 && endIndex != -1) {
-							append = false;
-							String sub = textContent.substring(0, endIndex + 1);
-							content += sub;
-							//text.setValue(text.getValue().replace(sub, ""));
-							endRun = run;
-						}
-						//if both is -1, then we append the text if append is true
-						else if (startIndex == -1 && endIndex == -1 && append) {
-							content += textContent;
-							//text.setValue("");
-						}
-					}
-					
-					if (content.trim().equals(placeholder)) {
-						//Creates a new run and adds the original run's properties
-						R newRun = factory.createR();
-						newRun.setRPr(rpr);
-						
-						//Creates and add a new text element
-						Text newText = factory.createText();
-						newText.setValue(replacementText);
-						newRun.getContent().add(newText);
-						
-						//removes the split runs that contained the placeholder
-						startIndex = paragraph.getContent().indexOf(startRun);
-						endIndex = paragraph.getContent().indexOf(endRun);
-						for(int i = startIndex; i < endIndex - 1; i++) {
-							paragraph.getContent().remove(i);
-						}
-						
-						//adds the new run
-						paragraph.getContent().add(startIndex, newRun);
-						content = "";
-						
-						return;
-					}
-				}
+				replaceAndMergeSplitPlaceholderRunsInParagraph(paragraph, placeholder, replacementText);
 			}
 		}
 	}
@@ -323,18 +242,12 @@ public class DocxDocument {
 		addAllStylesFromDocument(document);
 	}
 	
+	//TODO: Make it possible to write one liner blocks, e.g. blockStart(.+)blockEnd
 	public void insertElementsFromContentBlock(WordprocessingMLPackage document, String blockStart, String blockEnd) {
-		
+			
 		MainDocumentPart documentPart = document.getMainDocumentPart();
 		
-		//find all paragraphs
-		String xpath = "//w:p[w:r[w:t]]";
-		List<Object> list = null;
-		try {
-			list = documentPart.getJAXBNodesViaXPath(xpath, false);
-		} catch (JAXBException e) {
-			e.printStackTrace();
-		}
+		List<Object> list = getAllElementFromObject(documentPart, P.class);
 		
 		int startIndex = 0;
 		int endIndex = 0;
@@ -353,7 +266,38 @@ public class DocxDocument {
 				
 				//Adds them to the document	
 				this.document.getMainDocumentPart().getContent().addAll(elementsToAdd);
-			}			
+			} /*else {
+				int start = content.indexOf(blockStart);
+				int end = content.indexOf(blockEnd);
+				
+				//the block is a one liner, e.g. blockStart(.+)blockEnd
+				if (start != -1 && end != -1) {
+					List<Object> texts = getAllElementFromObject(paragraph, Text.class);
+					
+					for(Object obj: texts) {
+						Text text = (Text) obj;
+						String textContent = text.getValue().trim();
+						
+						if (textContent.equals(blockStart) || textContent.equals(blockEnd)) {
+							R run = (R) text.getParent();
+							
+						}
+						
+//						if (textContent.equals(content)) {
+//							String subStartBlock = textContent.substring(start, start + blockStart.length() - 1);
+//							String subEndBlock = textContent.substring(end);
+//							
+//							textContent.replace(subStartBlock, "");
+//							textContent.replace(subEndBlock, "");
+//							
+//							text.setValue(textContent);
+//							break;
+//						}
+					}
+					
+					this.document.getMainDocumentPart().getContent().add(paragraph);
+				}
+			}*/
 		}
 		
 		addAllStylesFromDocument(document);
@@ -439,5 +383,88 @@ public class DocxDocument {
 		}
 		
 		return paragraphs;
+	}
+	
+	private void replaceAndMergeSplitPlaceholderRunsInParagraph(P paragraph, String placeholder, String replacementText) {
+		//gets all the runs
+		List<Object> runs = getAllElementFromObject(paragraph, R.class);
+		
+		//loops through all the runs in the paragraph to search for
+		//the placeholder
+		String content = "";
+		int startIndex = 0, endIndex = 0;
+		boolean append = false;
+		R startRun = null, endRun = null;
+		RPr rpr = null;
+		for(Object r: runs) {
+			R run = (R) r;
+			
+			//gets all the texts, not sure if there will ever be more than one
+			List<Object> texts = getAllElementFromObject(run, Text.class);
+			
+			for(Object t: texts) {
+				Text text = (Text) t;
+				String textContent = text.getValue();
+				
+				startIndex = textContent.indexOf(PLACEHOLDER_START);						
+				endIndex = textContent.indexOf(PLACEHOLDER_END);
+				
+				//Checks if the text contains the whole placeholder
+				if (startIndex != -1 && endIndex != -1) {
+					content = textContent.substring(startIndex, endIndex + PLACEHOLDER_END.length());
+					
+					if (content.trim().equals(placeholder)) {
+						text.setValue(replacementText);
+						
+						return;
+					}
+				} 
+				//only start of the placeholder
+				else if (startIndex != -1 && endIndex == -1) {
+					append = true;
+					String sub = textContent.substring(startIndex);
+					content += sub;
+					rpr = run.getRPr();
+					startRun = run;
+				}
+				//only the end of the placeholder
+				else if (startIndex == -1 && endIndex != -1) {
+					append = false;
+					String sub = textContent.substring(0, endIndex + PLACEHOLDER_END.length());
+					content += sub;
+					endRun = run;
+				}
+				//if both is -1, then we append the text if append is true
+				else if (startIndex == -1 && endIndex == -1 && append) {
+					content += textContent;
+				}
+			}
+			
+			if (content.trim().equals(placeholder)) {
+				org.docx4j.wml.ObjectFactory factory = new org.docx4j.wml.ObjectFactory();
+				
+				//Creates a new run and adds the original run's properties
+				R newRun = factory.createR();
+				newRun.setRPr(rpr);
+				
+				//Creates and add a new text element
+				Text newText = factory.createText();
+				newText.setValue(replacementText);
+				newRun.getContent().add(newText);
+				
+				//removes the split runs that contained the placeholder
+				startIndex = paragraph.getContent().indexOf(startRun);
+				endIndex = paragraph.getContent().indexOf(endRun);
+				for(int i = startIndex; i < endIndex - 1; i++) {
+					paragraph.getContent().remove(i);
+				}
+				
+				//adds the new run
+				paragraph.getContent().add(startIndex, newRun);
+				content = "";
+				
+				return;
+			}
+		}
 	}
 }
