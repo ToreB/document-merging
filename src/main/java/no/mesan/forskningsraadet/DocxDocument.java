@@ -7,8 +7,10 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.xml.bind.JAXBElement;
 import javax.xml.bind.JAXBException;
@@ -42,13 +44,15 @@ import org.docx4j.wml.Text;
 
 public class DocxDocument {
 	private static final int HEADER = 1;
-	private static final int FOOTER = 2;	
+	private static final int FOOTER = 2;
+	private static final String PLACEHOLDER_START= "<";
+	private static final String PLACEHOLDER_END = ">";
 	
 	private String filePath;
 	private WordprocessingMLPackage document;
 	
 	//TODO: Make all the replacePlaceholder methods be able to handle text split into more than one text element.
-	
+	//TODO: Research the Office OpenXML structure
 	public DocxDocument() {
 		try {
 			document = WordprocessingMLPackage.createPackage();
@@ -160,7 +164,7 @@ public class DocxDocument {
 		List<SectionWrapper> sectionWrappers = document.getDocumentModel().getSections();
 		org.docx4j.wml.ObjectFactory factory = new org.docx4j.wml.ObjectFactory();
 		
-		for (SectionWrapper sw : sectionWrappers) {
+		for (SectionWrapper sw : sectionWrappers) {	
 			HeaderFooterPolicy hfp = sw.getHeaderFooterPolicy();
 			
 			Object element = null;
@@ -170,7 +174,8 @@ public class DocxDocument {
 				element = hfp.getDefaultFooter();
 			}
 
-			String xpath = "//w:r[w:t[contains(text(),'" + placeholder + "')]]";
+			//String xpath = "//w:r[w:t[contains(text(),'" + placeholder + "')]]";
+			String xpath = "//w:p[w:r[w:t]]";
 			List<Object> list = null;
 			try {
 				if (option == HEADER)
@@ -182,11 +187,94 @@ public class DocxDocument {
 				list = new ArrayList<Object>();
 			}
 			
-			//There may be a better way to do these operations,
-			//haven't looked that much on it, just shamelessly copied a working
-			//example from the internet...
-			for (int i = 0; i < list.size(); i++) {
-				R run = (R) list.get(i);
+			//Loops through all the paragraphs in the header/footer
+			//not sure if there will ever be more than one, but just in case
+			for (Object p: list) {
+				P paragraph = (P) p;
+				
+				//gets all the runs
+				List<Object> runs = getAllElementFromObject(paragraph, R.class);
+				
+				//loops through all the runs in the paragraph to search for
+				//the placeholder
+				String content = "";
+				int startIndex = 0, endIndex = 0;
+				boolean append = false;
+				R startRun = null, endRun = null;
+				RPr rpr = null;
+				for(Object r: runs) {
+					R run = (R) r;
+					
+					//gets all the texts, not sure if there will ever be more than one
+					List<Object> texts = getAllElementFromObject(run, Text.class);
+					
+					for(Object t: texts) {
+						Text text = (Text) t;
+						String textContent = text.getValue();
+						
+						startIndex = textContent.indexOf(PLACEHOLDER_START);						
+						endIndex = textContent.indexOf(PLACEHOLDER_END);
+						
+						//Checks if the text contains the whole placeholder
+						if (startIndex != -1 && endIndex != -1) {
+							content = textContent.substring(startIndex, endIndex + 1);
+							
+							if (content.trim().equals(placeholder)) {
+								text.setValue(replacementText);
+								
+								return;
+							}
+						} 
+						//only start of the placeholder
+						else if (startIndex != -1 && endIndex == -1) {
+							append = true;
+							String sub = textContent.substring(startIndex);
+							content += sub;
+							//text.setValue(text.getValue().replace(sub, ""));
+							rpr = run.getRPr();
+							startRun = run;
+						}
+						//only the end of the placeholder
+						else if (startIndex == -1 && endIndex != -1) {
+							append = false;
+							String sub = textContent.substring(0, endIndex + 1);
+							content += sub;
+							//text.setValue(text.getValue().replace(sub, ""));
+							endRun = run;
+						}
+						//if both is -1, then we append the text if append is true
+						else if (startIndex == -1 && endIndex == -1 && append) {
+							content += textContent;
+							//text.setValue("");
+						}
+					}
+					
+					if (content.trim().equals(placeholder)) {
+						//Creates a new run and adds the original run's properties
+						R newRun = factory.createR();
+						newRun.setRPr(rpr);
+						
+						//Creates and add a new text element
+						Text newText = factory.createText();
+						newText.setValue(replacementText);
+						newRun.getContent().add(newText);
+						
+						//removes the split runs that contained the placeholder
+						startIndex = paragraph.getContent().indexOf(startRun);
+						endIndex = paragraph.getContent().indexOf(endRun);
+						for(int i = startIndex; i < endIndex - 1; i++) {
+							paragraph.getContent().remove(i);
+						}
+						
+						//adds the new run
+						paragraph.getContent().add(startIndex, newRun);
+						content = "";
+						
+						return;
+					}
+				}
+				
+				/*R run = (R) list.get(i);
 				P parent = (P) run.getParent();
 				RPr rpr = run.getRPr();
 				int index = parent.getContent().indexOf(run);
@@ -197,7 +285,7 @@ public class DocxDocument {
 				mainR.setRPr(rpr);
 				addedTmpText.setValue(replacementText);
 				mainR.getContent().add(addedTmpText);
-				parent.getContent().add(index, mainR);
+				parent.getContent().add(index, mainR);*/
 			}
 		}
 	}
@@ -313,7 +401,7 @@ public class DocxDocument {
 	 * @return all the text content of a paragraph as a String
 	 */
 	private String getAllTextInParagraph(P paragraph) {
-		//gets all run elemenets
+		//gets all run elements
 		List<Object> runs = getAllElementFromObject(paragraph, R.class);
 		
 		//loops through the run elements to find all the text elements,
@@ -336,7 +424,7 @@ public class DocxDocument {
 	}
 	
 	/**
-	 * Searches a document for all paragraphs who's content equals the placeholder
+	 * Searches a document for all paragraphs who's content contains the placeholder
 	 * text.
 	 * 
 	 * @param document to search
@@ -352,13 +440,13 @@ public class DocxDocument {
 			e.printStackTrace();
 		}
 		
-		//Finds all the paragraphs that has text matching the placeholder text
+		//Finds all the paragraphs that contains the placeholder text
 		List<P> paragraphs = new ArrayList<P>();
 		for(Object obj: list) {
 			P paragraph = (P) obj;
 			String content = getAllTextInParagraph(paragraph);
 			
-			if (content.equals(placeholder)) {
+			if (content.indexOf(placeholder) != -1) {
 				paragraphs.add(paragraph);
 			}
 		}
