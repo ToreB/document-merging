@@ -22,6 +22,8 @@ import org.apache.log4j.spi.LoggerRepository;
 import org.docx4j.convert.out.pdf.PdfConversion;
 import org.docx4j.convert.out.pdf.viaXSLFO.Conversion;
 import org.docx4j.convert.out.pdf.viaXSLFO.PdfSettings;
+import org.docx4j.dml.CTBlip;
+import org.docx4j.dml.wordprocessingDrawing.Anchor;
 import org.docx4j.fonts.BestMatchingMapper;
 import org.docx4j.model.structure.HeaderFooterPolicy;
 import org.docx4j.model.structure.SectionWrapper;
@@ -35,8 +37,10 @@ import org.docx4j.openpackaging.parts.WordprocessingML.FooterPart;
 import org.docx4j.openpackaging.parts.WordprocessingML.HeaderPart;
 import org.docx4j.openpackaging.parts.WordprocessingML.MainDocumentPart;
 import org.docx4j.openpackaging.parts.relationships.RelationshipsPart.AddPartBehaviour;
+import org.docx4j.relationships.Relationship;
 import org.docx4j.wml.Body;
 import org.docx4j.wml.ContentAccessor;
+import org.docx4j.wml.Drawing;
 import org.docx4j.wml.P;
 import org.docx4j.wml.R;
 import org.docx4j.wml.RPr;
@@ -106,13 +110,14 @@ public class DocxDocument {
 				OutputStream os = new FileOutputStream(file);
 				
 				conversion.output(os, new PdfSettings());
-				System.out.println("Saved: " + file.getAbsolutePath());
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
 		} else {
 			throw new IllegalArgumentException("Currently only .docx and .pdf extensions are supported.");
 		}
+		
+		System.out.println("Saved: " + file.getAbsolutePath());
 	}
 	
 	/**
@@ -291,32 +296,38 @@ public class DocxDocument {
 				//Gets all the elements inside the block
 				List<Object> elementsToAdd = documentPart.getContent().subList(startIndex, endIndex);
 				
-				//Adds them to the document	
-				this.document.getMainDocumentPart().getContent().addAll(elementsToAdd);
-				
-				//Copy images, if any
-				//TODO: Update relationships between image and image xml
-				Parts parts = document.getParts();
-				
-				Map<PartName, Part> partsMap = parts.getParts();
-				Iterator<PartName> iterator = partsMap.keySet().iterator();
-				while(iterator.hasNext()) {
-					PartName name = iterator.next();
+				//Adds elements to the document
+				for(Object element: elementsToAdd) {
+					List<Object> drawings = getAllElementFromObject(element, Drawing.class);
 					
-					//not sure if more any other extension than png is used, so
-					//may be more than the ones listed
-					if (name.getExtension().equals("png") || 
-						name.getExtension().equals("jpg") ||
-						name.getExtension().equals("jpeg")) {
+					//Copy images, if any
+					if (!drawings.isEmpty()) {
 						
-						try {
-							this.document.addTargetPart(partsMap.get(name), 
-											AddPartBehaviour.OVERWRITE_IF_NAME_EXISTS);
-						} catch (InvalidFormatException e) {
-							e.printStackTrace();
+						for(Object obj: drawings) {
+							Drawing drawing = (Drawing) obj;
+							
+							for(Object anchorOrInline: drawing.getAnchorOrInline()) {
+								//TODO: Make the following block work as expected...
+								if (anchorOrInline instanceof Anchor) {
+									Anchor anchor = (Anchor) anchorOrInline;
+									
+									CTBlip blip = anchor.getGraphic().getGraphicData().getPic()
+															.getBlipFill().getBlip();
+									
+									Relationship relationship 
+										= copyImageFromDocument(document, blip.getEmbed());
+									
+									blip.setEmbed(relationship.getId());
+								} else {
+									//Do stuff...
+								}
+							}
 						}
 					}
+					
+					this.document.getMainDocumentPart().getContent().add(element);
 				}
+				//this.document.getMainDocumentPart().getContent().addAll(elementsToAdd);
 				
 			} /*else {
 				int start = content.indexOf(blockStart);
@@ -353,6 +364,37 @@ public class DocxDocument {
 		}
 		
 		addAllStylesFromDocument(document);
+	}
+	
+	private Relationship copyImageFromDocument(WordprocessingMLPackage document, String imageToCopyRelId) {
+		//TODO: Update relationships between images and the drawing xml element
+		Parts parts = document.getParts();	
+		
+		Map<PartName, Part> partsMap = parts.getParts();
+		Iterator<PartName> iterator = partsMap.keySet().iterator();
+		Relationship relationship = null;
+		while(iterator.hasNext()) {
+			PartName name = iterator.next();
+	
+			//not sure if any other extension than png is used, so
+			//may be more than the ones listed
+			if (name.getExtension().equals("png") || 
+				name.getExtension().equals("jpg") ||
+				name.getExtension().equals("jpeg")) {
+				
+				Part image = partsMap.get(name);
+				
+				try {
+					relationship = this.document.addTargetPart(
+							image, AddPartBehaviour.RENAME_IF_NAME_EXISTS);
+
+				} catch (InvalidFormatException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+		
+		return relationship;
 	}
 	
 	/**

@@ -14,11 +14,11 @@ public class App {
 		String contents = path + "IMMedInnhold.docx";
     	
         try {
-        	DocxDocument docx = replaceStyledPlaceholders(path + "template2.docx");
+        	//DocxDocument docx = replaceStyledPlaceholders(path + "template2.docx");
         	
 			//DocxDocument docx = mergeDocuments(layout, contents);
        	
-        	//DocxDocument docx = insertFromPlaceholderBlocks(path + "FlettemotorData.docx");
+        	DocxDocument docx = insertFromPlaceholderBlocks(path + "FlettemotorData.docx");
         	
 			docx.writeToFile(path + "dokument.docx");
 			
