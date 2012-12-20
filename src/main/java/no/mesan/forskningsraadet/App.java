@@ -14,9 +14,9 @@ public class App {
 		String contents = path + "IMMedInnhold.docx";
     	
         try {
-			//DocxDocument docx = mergeDocuments(layout, contents);
+			DocxDocument docx = mergeDocuments(layout, contents);
        	
-        	DocxDocument docx = insertFromPlaceholderBlocks(path + "FlettemotorData.docx");
+        	//DocxDocument docx = insertFromPlaceholderBlocks(path + "FlettemotorData.docx");
         	
 			docx.writeToFile(path + "dokument.docx");
 			
@@ -54,7 +54,8 @@ public class App {
 		headerReplacements.put("<%HEADER_RIGHT%>", "Høyre side i header!");
 		
 		layoutTemplate.replaceHeaderPlaceholders(headerReplacements);
-		layoutTemplate.replaceFooterPlaceholder("<%FOOTER%>", "Dette er en footer");
+		layoutTemplate.replaceFooterPlaceholder("<%FOOTER_LEFT%>", "Venstre side i footer.");
+		layoutTemplate.replaceFooterPlaceholder("<%FOOTER_MIDDLE%>", "Dette er en footer");
 		layoutTemplate.replacePlaceholder("<%TITLE%>", "Min Tittel");
 		
 		return layoutTemplate;

@@ -7,9 +7,11 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.xml.bind.JAXBElement;
 import javax.xml.bind.JAXBException;
@@ -49,7 +51,7 @@ public class DocxDocument {
 	private String filePath;
 	private WordprocessingMLPackage document;
 	
-	//TODO: Make all the replacePlaceholder methods be able to handle text split into more than one text element.
+	//TODO: Make all the replacePlaceholder methods be able to handle text split into more than one run element.
 	//TODO: Research the Office OpenXML structure
 	public DocxDocument() {
 		try {
@@ -189,7 +191,7 @@ public class DocxDocument {
 			for (Object p: list) {
 				P paragraph = (P) p;
 				
-				replaceAndMergeSplitPlaceholderRunsInParagraph(paragraph, placeholder, replacementText);
+				replacePlaceholderInParagraph(paragraph, placeholder, replacementText);
 			}
 		}
 	}
@@ -408,7 +410,16 @@ public class DocxDocument {
 		return paragraphs;
 	}
 	
-	private void replaceAndMergeSplitPlaceholderRunsInParagraph(P paragraph, String placeholder, String replacementText) {
+	/**
+	 * Method that replaces a placeholder in a paragraph with the replacement text.
+	 * This method is able to handle that a placeholder is split into several runs
+	 * inside a paragraph.
+	 * 
+	 * @param paragraph to modify
+	 * @param placeholder to replace
+	 * @param replacementText to replace with placeholder
+	 */
+	private void replacePlaceholderInParagraph(P paragraph, String placeholder, String replacementText) {
 		//gets all the runs
 		List<Object> runs = getAllElementFromObject(paragraph, R.class);
 		
@@ -417,7 +428,8 @@ public class DocxDocument {
 		String content = "";
 		int startIndex = 0, endIndex = 0;
 		boolean append = false;
-		R startRun = null, endRun = null;
+		R startRun = null;//, endRun = null;
+		Set<R> placeholderRuns = new HashSet<R>();
 		RPr rpr = null;
 		for(Object r: runs) {
 			R run = (R) r;
@@ -435,6 +447,7 @@ public class DocxDocument {
 				//Checks if the text contains the whole placeholder
 				if (startIndex != -1 && endIndex != -1) {
 					content = textContent.substring(startIndex, endIndex + PLACEHOLDER_END.length());
+					placeholderRuns.add(run);
 					
 					if (content.trim().equals(placeholder)) {
 						text.setValue(replacementText);
@@ -449,22 +462,27 @@ public class DocxDocument {
 					content += sub;
 					rpr = run.getRPr();
 					startRun = run;
+					placeholderRuns.add(run);
 				}
 				//only the end of the placeholder
 				else if (startIndex == -1 && endIndex != -1) {
 					append = false;
 					String sub = textContent.substring(0, endIndex + PLACEHOLDER_END.length());
 					content += sub;
-					endRun = run;
+					//endRun = run;
+					placeholderRuns.add(run);
 				}
 				//if both is -1, then we append the text if append is true
 				else if (startIndex == -1 && endIndex == -1 && append) {
 					content += textContent;
+					placeholderRuns.add(run);
 				}
 			}
 			
 			if (content.trim().equals(placeholder)) {
 				org.docx4j.wml.ObjectFactory factory = new org.docx4j.wml.ObjectFactory();
+				
+				//TODO: Reuse (replace text in) the startRun instead of creating a new one?
 				
 				//Creates a new run and adds the original run's properties
 				R newRun = factory.createR();
@@ -475,15 +493,20 @@ public class DocxDocument {
 				newText.setValue(replacementText);
 				newRun.getContent().add(newText);
 				
+				//gets the position to insert the new run
+				int placementIndex = paragraph.getContent().indexOf(startRun);
+				
 				//removes the split runs that contained the placeholder
-				startIndex = paragraph.getContent().indexOf(startRun);
+				paragraph.getContent().removeAll(placeholderRuns);
+				
+				/*startIndex = paragraph.getContent().indexOf(startRun);
 				endIndex = paragraph.getContent().indexOf(endRun);
 				for(int i = startIndex; i < endIndex - 1; i++) {
 					paragraph.getContent().remove(i);
-				}
+				}*/
 				
 				//adds the new run
-				paragraph.getContent().add(startIndex, newRun);
+				paragraph.getContent().add(placementIndex, newRun);
 				content = "";
 				
 				return;
