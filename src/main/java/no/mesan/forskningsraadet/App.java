@@ -20,7 +20,7 @@ public class App {
        	
         	//DocxDocument docx = insertFromPlaceholderBlocks(path + "FlettemotorData.docx");
         	
-			docx.writeToFile(path + "dokument.pdf");
+			docx.writeToFile(path + "dokument.docx");
 			
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();

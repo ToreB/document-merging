@@ -21,6 +21,7 @@ import org.apache.log4j.Logger;
 import org.apache.log4j.spi.LoggerRepository;
 import org.docx4j.convert.out.pdf.PdfConversion;
 import org.docx4j.convert.out.pdf.viaXSLFO.Conversion;
+import org.docx4j.convert.out.pdf.viaXSLFO.PdfSettings;
 import org.docx4j.fonts.BestMatchingMapper;
 import org.docx4j.model.structure.HeaderFooterPolicy;
 import org.docx4j.model.structure.SectionWrapper;
@@ -104,8 +105,8 @@ public class DocxDocument {
 				
 				OutputStream os = new FileOutputStream(file);
 				
-				conversion.output(os, null);
-				System.out.println("Saved as PDF");
+				conversion.output(os, new PdfSettings());
+				System.out.println("Saved: " + file.getAbsolutePath());
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
