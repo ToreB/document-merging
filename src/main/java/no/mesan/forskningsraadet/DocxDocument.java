@@ -105,6 +105,7 @@ public class DocxDocument {
 				OutputStream os = new FileOutputStream(file);
 				
 				conversion.output(os, null);
+				System.out.println("Saved as PDF");
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -113,6 +114,16 @@ public class DocxDocument {
 		}
 	}
 	
+	/**
+	 * Method that gets all elements of a specific class from an element,
+	 * e.g. all runs in a paragraph or all paragraphs in a document.
+	 * 
+	 * Shamelessly stolen from an example at: 
+	 * http://www.javacodegeeks.com/2012/07/java-word-docx-documents-with-docx4j.html
+	 * 
+	 * @param obj the object to retrieve elements from
+	 * @param toSearch the class to search for
+	 */
 	private List<Object> getAllElementFromObject(Object obj, Class<?> toSearch) {
 		List<Object> result = new ArrayList<Object>();
 		if (obj instanceof JAXBElement)
@@ -130,32 +141,47 @@ public class DocxDocument {
 		return result;
 	}
 	
-	public void replacePlaceholders(Map<String, String> replacements) {		
-		List<Object> texts = getAllElementFromObject(
-				document.getMainDocumentPart(), Text.class);
+	public void replaceBodyPlaceholders(Map<String, String> replacements) {		
+		//gets all paragraphs from the body of the document
+		List<Object> paragraphs = getAllElementFromObject(
+				document.getMainDocumentPart(), P.class);
 		
-		for (Object text : texts) {
-			Text textElement = (Text) text;
-			String value = textElement.getValue();
+		for (Object obj : paragraphs) {
+			P paragraph = (P) obj;
+			
+			//gets the text content
+			String content = getAllTextInParagraph(paragraph);
 			
 			if (replacements.isEmpty()) break;
 			
-			if (replacements.keySet().contains(value)) {
-				String newValue = replacements.get(value);
-				textElement.setValue(newValue);				
-				replacements.remove(value);
+			//loops through the keys and checks if content contains the placeholder (key)
+			for(Iterator<String> iterator = replacements.keySet().iterator(); iterator.hasNext();) {
+				String key = iterator.next();
+				if (content.contains(key)) {
+					String replacementText = replacements.get(key);
+					
+					replacePlaceholderInParagraph(paragraph, key, replacementText);
+					
+					iterator.remove();
+					break;
+				}
 			}
 		}
 	}
 	
-	public void replacePlaceholder(String placeholder, String replacementText) {		
-		List<Object> texts = getAllElementFromObject(
-				document.getMainDocumentPart(), Text.class);
+	public void replaceBodyPlaceholder(String placeholder, String replacementText) {		
+		//gets all paragraphs from the body of the document
+		List<Object> paragraphs = getAllElementFromObject(
+				document.getMainDocumentPart(), P.class);
 		
-		for (Object text : texts) {
-			Text textElement = (Text) text;
-			if (textElement.getValue().equals(placeholder)) {
-				textElement.setValue(replacementText);
+		for (Object obj : paragraphs) {
+			P paragraph = (P) obj;
+			
+			//gets the text content
+			String content = getAllTextInParagraph(paragraph);
+			
+			if (content.contains(placeholder)) {
+				replacePlaceholderInParagraph(paragraph, placeholder, replacementText);
 			}
 		}
 	}
@@ -221,7 +247,7 @@ public class DocxDocument {
 		MainDocumentPart documentPart = this.document.getMainDocumentPart();
 
         //String xpath = "//w:p[w:r[w:t[contains(text(),'" + placeholder + "')]]]";
-        List<P> paragraphs = getAllParagraphsContainingPlaceholder(this.document, placeholder);
+        List<P> paragraphs = getAllParagraphsContainingPlaceholder(documentPart, placeholder);
 		
 		for (P paragraph: paragraphs) {
 			
@@ -357,6 +383,8 @@ public class DocxDocument {
 	 * @return all the text content of a paragraph as a String
 	 */
 	private String getAllTextInParagraph(P paragraph) {
+		//TODO: Could probably skip getting runs and just get text elements straight from the start
+		
 		//gets all run elements
 		List<Object> runs = getAllElementFromObject(paragraph, R.class);
 		
@@ -387,11 +415,11 @@ public class DocxDocument {
 	 * @param placeholder to search for
 	 * @return a list of paragraphs which contents are the placeholder text
 	 */
-	private List<P> getAllParagraphsContainingPlaceholder(WordprocessingMLPackage document, String placeholder) {
+	private List<P> getAllParagraphsContainingPlaceholder(MainDocumentPart mainDocument, String placeholder) {
 		String xpath = "//w:p[w:r[w:t]]";
 		List<Object> list = null;
 		try {
-			list = document.getMainDocumentPart().getJAXBNodesViaXPath(xpath, false);
+			list = mainDocument.getJAXBNodesViaXPath(xpath, false);
 		} catch (JAXBException e) {
 			e.printStackTrace();
 		}
@@ -499,15 +527,9 @@ public class DocxDocument {
 				//removes the split runs that contained the placeholder
 				paragraph.getContent().removeAll(placeholderRuns);
 				
-				/*startIndex = paragraph.getContent().indexOf(startRun);
-				endIndex = paragraph.getContent().indexOf(endRun);
-				for(int i = startIndex; i < endIndex - 1; i++) {
-					paragraph.getContent().remove(i);
-				}*/
-				
 				//adds the new run
 				paragraph.getContent().add(placementIndex, newRun);
-				content = "";
+				//content = "";
 				
 				return;
 			}

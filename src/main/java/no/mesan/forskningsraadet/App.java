@@ -14,11 +14,13 @@ public class App {
 		String contents = path + "IMMedInnhold.docx";
     	
         try {
-			DocxDocument docx = mergeDocuments(layout, contents);
+        	DocxDocument docx = replaceStyledPlaceholders(path + "template2.docx");
+        	
+			//DocxDocument docx = mergeDocuments(layout, contents);
        	
         	//DocxDocument docx = insertFromPlaceholderBlocks(path + "FlettemotorData.docx");
         	
-			docx.writeToFile(path + "dokument.docx");
+			docx.writeToFile(path + "dokument.pdf");
 			
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
@@ -27,6 +29,35 @@ public class App {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+    }
+    
+    private static DocxDocument replaceStyledPlaceholders(String layout) 
+    		throws FileNotFoundException, Docx4JException {
+    	DocxDocument layoutTemplate = new DocxDocument(layout);
+		
+		Map<String, String> headerReplacements = new HashMap<String, String>();
+		headerReplacements.put("<%HEADER_MIDDLE%>", "Dette er en header!");
+		headerReplacements.put("<%HEADER_LEFT%>", "Venstre side i header");
+		headerReplacements.put("<%HEADER_RIGHT%>", "Høyre side i header!");		
+		layoutTemplate.replaceHeaderPlaceholders(headerReplacements);
+		
+		layoutTemplate.replaceFooterPlaceholder("<%FOOTER_LEFT%>", "Venstre side i footer.");
+		layoutTemplate.replaceFooterPlaceholder("<%FOOTER_MIDDLE%>", "Dette er en footer");
+		
+		Map<String, String> bodyReplacements = new HashMap<String, String>();
+		bodyReplacements.put("<%TITLE%>", "Min Tittel");
+		bodyReplacements.put("<%CONTENT_NORMAL%>", "Normal skrift");
+		bodyReplacements.put("<%CONTENT_BOLD%>", "Fet skrift");
+		bodyReplacements.put("<%CONTENT_ITALIC%>", "Kursiv skrift");
+		bodyReplacements.put("<%CONTENT_UNDERLINED%>", "Understreket skrift");
+		bodyReplacements.put("<%CONTENT_BOLD_ITALIC_UNDERLINED%>", "Fet, kursiv, understreket skrift");
+		
+		String placeholder = "<Denne lange setningen kan også brukes som en ‘placeholder’, hvis man måtte ønske det, men det er kanskje ikke like lett å få øye på den.>";
+		bodyReplacements.put(placeholder, "Denne setningen ble satt inn fra fletteprogrammet :).");
+		
+		layoutTemplate.replaceBodyPlaceholders(bodyReplacements);
+		
+		return layoutTemplate;
     }
 
 	private static DocxDocument insertFromPlaceholderBlocks(String documentWithBLocks)
@@ -56,7 +87,7 @@ public class App {
 		layoutTemplate.replaceHeaderPlaceholders(headerReplacements);
 		layoutTemplate.replaceFooterPlaceholder("<%FOOTER_LEFT%>", "Venstre side i footer.");
 		layoutTemplate.replaceFooterPlaceholder("<%FOOTER_MIDDLE%>", "Dette er en footer");
-		layoutTemplate.replacePlaceholder("<%TITLE%>", "Min Tittel");
+		layoutTemplate.replaceBodyPlaceholder("<%TITLE%>", "Min Tittel");
 		
 		return layoutTemplate;
     }
