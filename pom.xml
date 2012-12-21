@@ -3,11 +3,11 @@
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>no.mesan</groupId>
-  <artifactId>Forskningsraadet</artifactId>
+  <artifactId>document-merging</artifactId>
   <version>0.0.1-SNAPSHOT</version>
   <packaging>jar</packaging>
 
-  <name>Forskningsraadet</name>
+  <name>Document Merging</name>
   <url>http://maven.apache.org</url>
 
   <properties>
