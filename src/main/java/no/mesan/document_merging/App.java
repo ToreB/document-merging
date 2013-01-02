@@ -9,7 +9,7 @@ import org.docx4j.openpackaging.exceptions.Docx4JException;
 
 public class App {
     public static void main( String[] args ) {
-		String path = "/media/sf_DATA_DRIVE/Documents/Jobb/Forskningsraadet/eksempler/";
+		String path = "./eksempler/";
 		String layout = path + "template.docx";
 		String contents = path + "IMMedInnhold.docx";
     	
@@ -26,8 +26,6 @@ public class App {
         	DocxDocument docx3 = insertFromContentBlocks(path + "insertFromContentBlocksData.docx");
         	docx3.writeToFile(path + "insertFromContentBlocksOutput.docx");
         	docx3.writeToFile(path + "insertFromContentBlocksOutput.pdf");
-        	
-			//docx.writeToFile(path + "dokument.docx");
 			
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
