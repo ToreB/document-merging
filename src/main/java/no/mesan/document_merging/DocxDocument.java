@@ -309,7 +309,6 @@ public class DocxDocument {
 							Drawing drawing = (Drawing) obj;
 							
 							for(Object anchorOrInline: drawing.getAnchorOrInline()) {
-								//TODO: Make the following block work as expected...
 								boolean anchor = anchorOrInline instanceof Anchor;
 								
 								CTBlip blip;
@@ -374,36 +373,52 @@ public class DocxDocument {
 		addAllStylesFromDocument(document);
 	}
 	
+	/**
+	 * Method that copies the image that is the target of the relationship with 
+	 * the specified relationship id from the specified document.
+	 * 
+	 * @param document to copy image from
+	 * @param relId the id of the relationship between the drawing element and image to copy
+	 * @return the relationship between the added image and a copied drawing element
+	 */
 	private Relationship copyImageFromDocument(WordprocessingMLPackage document, String relId) {
-		//TODO: Update relationships between images and the drawing xml element
+		
+		//Gets all the parts of a document (which is xml files and other resources like images)
 		Parts parts = document.getParts();	
 		
+		//loops through all the parts
 		Map<PartName, Part> partsMap = parts.getParts();
 		Iterator<PartName> iterator = partsMap.keySet().iterator();
 		Relationship relationship = null;
 		while(iterator.hasNext()) {
 			PartName part = iterator.next();
-	
+			
+			//only interested in image parts
 			//not sure if any other extension than png is used, so
-			//may be more than the ones listed
+			//may be even more than the ones listed
 			if (part.getExtension().equals("png") || 
 				part.getExtension().equals("jpg") ||
 				part.getExtension().equals("jpeg")) {
 				
+				//gets the image name by splitting the parts path and selecting the last element
 				String[] nameParts = part.getName().split("/");
 				String name = nameParts[nameParts.length - 1];
 				
+				//finds the relationship with the relId
 				Relationship rel = 
 					document.getMainDocumentPart().getRelationshipsPart().getRelationshipByID(relId);
 				
+				//checks if the relationships target is the image
 				if (rel.getTarget().endsWith(name)) {
 					Part image = partsMap.get(part);
 					
 					try {
+						//adds the image to this document
 						relationship = this.document.getMainDocumentPart().addTargetPart(
 								image, AddPartBehaviour.RENAME_IF_NAME_EXISTS);	
 						
-						return relationship;
+						//we're done, so break out
+						break;
 						
 					} catch (InvalidFormatException e) {
 						e.printStackTrace();
