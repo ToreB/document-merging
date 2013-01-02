@@ -21,12 +21,15 @@
       <version>4.8.1</version>
       <scope>test</scope>
     </dependency>
+    
+    <!-- For working with Microsoft (Office OpenXML) word documents -->
     <dependency>
     	<groupId>org.docx4j</groupId>
     	<artifactId>docx4j</artifactId>
     	<version>2.8.0</version>
     </dependency>
     
+    <!-- For working with OpenOffice documents -->
     <dependency>
 		<groupId>org.odftoolkit</groupId>
 		<artifactId>odfdom-java</artifactId>

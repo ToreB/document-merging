@@ -55,10 +55,8 @@ public class DocxDocument {
 	private static final String PLACEHOLDER_START= "<";
 	private static final String PLACEHOLDER_END = ">";
 	
-	private String filePath;
 	private WordprocessingMLPackage document;
 	
-	//TODO: Make all the replacePlaceholder methods be able to handle text split into more than one run element.
 	//TODO: Research the Office OpenXML structure
 	public DocxDocument() {
 		try {
@@ -70,14 +68,6 @@ public class DocxDocument {
 	
 	public DocxDocument(String filePath) throws FileNotFoundException, Docx4JException {
 		document = WordprocessingMLPackage.load(new FileInputStream(filePath));
-	}
-
-	public String getFilePath() {
-		return filePath;
-	}
-
-	public void setFilePath(String filePath) {
-		this.filePath = filePath;
 	}
 	
 	public WordprocessingMLPackage getDocument() {
@@ -276,8 +266,21 @@ public class DocxDocument {
 		addAllStylesFromDocument(document);
 	}
 	
-	//TODO: Make it possible to write one liner blocks, e.g. blockStart(.+)blockEnd
+	/**
+	 * Method that inserts the content inside a content block, from the specified
+	 * document, into this document.
+	 * 
+	 * Currently, the start and end of a block has to be on a separate line, e.g.<br>
+	 * {@code <start>}
+	 * 	<br>Some content<br>
+	 * {@code <end>}
+	 * 
+	 * @param document to insert content from
+	 * @param blockStart
+	 * @param blockEnd
+	 */
 	public void insertElementsFromContentBlock(WordprocessingMLPackage document, String blockStart, String blockEnd) {
+		//TODO: Make it possible to write one liner blocks, e.g. blockStart(.+)blockEnd
 			
 		MainDocumentPart documentPart = document.getMainDocumentPart();
 		
@@ -334,40 +337,8 @@ public class DocxDocument {
 					
 					this.document.getMainDocumentPart().getContent().add(element);
 				}
-				//this.document.getMainDocumentPart().getContent().addAll(elementsToAdd);
 				
-			} /*else {
-				int start = content.indexOf(blockStart);
-				int end = content.indexOf(blockEnd);
-				
-				//the block is a one liner, e.g. blockStart(.+)blockEnd
-				if (start != -1 && end != -1) {
-					List<Object> texts = getAllElementFromObject(paragraph, Text.class);
-					
-					for(Object obj: texts) {
-						Text text = (Text) obj;
-						String textContent = text.getValue().trim();
-						
-						if (textContent.equals(blockStart) || textContent.equals(blockEnd)) {
-							R run = (R) text.getParent();
-							
-						}
-						
-//						if (textContent.equals(content)) {
-//							String subStartBlock = textContent.substring(start, start + blockStart.length() - 1);
-//							String subEndBlock = textContent.substring(end);
-//							
-//							textContent.replace(subStartBlock, "");
-//							textContent.replace(subEndBlock, "");
-//							
-//							text.setValue(textContent);
-//							break;
-//						}
-					}
-					
-					this.document.getMainDocumentPart().getContent().add(paragraph);
-				}
-			}*/
+			}
 		}
 		
 		addAllStylesFromDocument(document);
