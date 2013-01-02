@@ -81,7 +81,7 @@ public class DocxDocument {
 	/**
 	 * Saves a file at the given file path.
 	 * <br>
-	 * Only .docx and .pdf extensions are supported.
+	 * Currently, only .docx and .pdf extensions are supported.
 	 * 
 	 * @param filePath
 	 * @throws IOException
@@ -211,7 +211,7 @@ public class DocxDocument {
 	 * 
 	 * @param placeholder
 	 * @param replacementText
-	 * @param option is either HEADER or FOOTER
+	 * @param option is either HEADER or FOOTER, anything else will default to FOOTER
 	 */
 	private void replaceHeaderFooterPlaceholder(String placeholder, String replacementText, int option) {
 		List<SectionWrapper> sectionWrappers = document.getDocumentModel().getSections();
