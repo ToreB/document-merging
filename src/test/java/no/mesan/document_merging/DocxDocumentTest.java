@@ -15,6 +15,7 @@ import org.junit.experimental.categories.Categories.ExcludeCategory;
 
 public class DocxDocumentTest {
 	private DocxDocument doc;
+	private String path = "./eksempler/replaceStyledPlaceholdersTemplate.docx";
 	
 	@Test
 	public void testDefaultCtor_createsdocument() {		
@@ -26,7 +27,7 @@ public class DocxDocumentTest {
 	@Test
 	public void testParameterizedCtor_WhenGivenAValidFilePath_ShouldNotThrowException() {
 		try {
-			doc = new DocxDocument("/media/sf_DATA_DRIVE/Documents/jobb/Forskningsraadet/template.docx");			
+			doc = new DocxDocument(path);			
 		} catch(Exception e) {
 			fail();
 		}
@@ -52,8 +53,8 @@ public class DocxDocumentTest {
 	}
 	
 	private void writeToFile(String filename) {	
-		doc = new DocxDocument();
 		try {
+			doc = new DocxDocument(path);
 			doc.writeToFile(filename);
 		} catch (Exception e) {
 			fail();

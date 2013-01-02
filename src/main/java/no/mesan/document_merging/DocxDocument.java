@@ -57,7 +57,6 @@ public class DocxDocument {
 	
 	private WordprocessingMLPackage document;
 	
-	//TODO: Research the Office OpenXML structure
 	public DocxDocument() {
 		try {
 			setDocument(WordprocessingMLPackage.createPackage());
@@ -341,7 +340,7 @@ public class DocxDocument {
 	 * @param blockEnd
 	 */
 	public void insertElementsFromContentBlock(WordprocessingMLPackage document, String blockStart, String blockEnd) {
-		//TODO: Make it possible to write one liner blocks, e.g. blockStart(.+)blockEnd
+		//TODO: Make it possible to write single line blocks, e.g. blockStart(.+)blockEnd
 			
 		MainDocumentPart documentPart = document.getMainDocumentPart();
 		
