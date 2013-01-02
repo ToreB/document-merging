@@ -60,14 +60,14 @@ public class DocxDocument {
 	//TODO: Research the Office OpenXML structure
 	public DocxDocument() {
 		try {
-			document = WordprocessingMLPackage.createPackage();
+			setDocument(WordprocessingMLPackage.createPackage());
 		} catch (InvalidFormatException e) {
 			e.printStackTrace();
 		}
 	}
 	
 	public DocxDocument(String filePath) throws FileNotFoundException, Docx4JException {
-		document = WordprocessingMLPackage.load(new FileInputStream(filePath));
+		setDocument(WordprocessingMLPackage.load(new FileInputStream(filePath)));
 	}
 	
 	public WordprocessingMLPackage getDocument() {
@@ -78,6 +78,15 @@ public class DocxDocument {
 		this.document = document;
 	}
 	
+	/**
+	 * Saves a file at the given file path.
+	 * <br>
+	 * Only .docx and .pdf extensions are supported.
+	 * 
+	 * @param filePath
+	 * @throws IOException
+	 * @throws Docx4JException
+	 */
 	public void writeToFile(String filePath) throws IOException, Docx4JException {
 		File file = new File(filePath);
 		
@@ -115,7 +124,7 @@ public class DocxDocument {
 	/**
 	 * Method that gets all elements of a specific class from an element,
 	 * e.g. all runs in a paragraph or all paragraphs in a document.
-	 * 
+	 * <br><br>
 	 * Shamelessly stolen from an example at: 
 	 * http://www.javacodegeeks.com/2012/07/java-word-docx-documents-with-docx4j.html
 	 * 
@@ -139,6 +148,13 @@ public class DocxDocument {
 		return result;
 	}
 	
+	/**
+	 * Replaces the placeholders, specified as keys in the map, with the values for each
+	 * key.<br>
+	 * Key: placeholder, value: replacement value
+	 * 
+	 * @param replacements
+	 */
 	public void replaceBodyPlaceholders(Map<String, String> replacements) {		
 		//gets all paragraphs from the body of the document
 		List<Object> paragraphs = getAllElementFromObject(
@@ -167,6 +183,12 @@ public class DocxDocument {
 		}
 	}
 	
+	/**
+	 * Replaces a placeholder in the document body with the replacement text.
+	 * 
+	 * @param placeholder
+	 * @param replacementText
+	 */
 	public void replaceBodyPlaceholder(String placeholder, String replacementText) {		
 		//gets all paragraphs from the body of the document
 		List<Object> paragraphs = getAllElementFromObject(
@@ -184,6 +206,13 @@ public class DocxDocument {
 		}
 	}
 	
+	/**
+	 * Replaces a header or footer placeholder with the replacement text.
+	 * 
+	 * @param placeholder
+	 * @param replacementText
+	 * @param option is either HEADER or FOOTER
+	 */
 	private void replaceHeaderFooterPlaceholder(String placeholder, String replacementText, int option) {
 		List<SectionWrapper> sectionWrappers = document.getDocumentModel().getSections();
 		
@@ -220,26 +249,58 @@ public class DocxDocument {
 		}
 	}
 	
+	/**
+	 * Replaces a placeholder in the header with the replacement text.
+	 * 
+	 * @param placeholder
+	 * @param replacementText
+	 */
 	public void replaceHeaderPlaceholder(String placeholder, String replacementText) {
 		replaceHeaderFooterPlaceholder(placeholder, replacementText, HEADER);
 	}
 	
+	/**
+	 * Replaces a placeholder in the footer with the replacement text.
+	 * 
+	 * @param placeholder
+	 * @param replacementText
+	 */
 	public void replaceFooterPlaceholder(String placeholder, String replacementText) {
 		replaceHeaderFooterPlaceholder(placeholder, replacementText, FOOTER);
 	}
 	
+	/**
+	 * Replaces the placeholders, specified as keys in the map, with the values for each
+	 * key.<br>
+	 * Key: placeholder, value: replacement value
+	 * 
+	 * @param replacements
+	 */
 	public void replaceHeaderPlaceholders(Map<String, String> replacements) {
 		for(String key: replacements.keySet()) {
 			replaceHeaderFooterPlaceholder(key, replacements.get(key), HEADER);
 		}
 	}
 	
+	/**
+	 * Replaces the placeholders, specified as keys in the map, with the values for each
+	 * key.<br>
+	 * Key: placeholder, value: replacement value
+	 * 
+	 * @param replacements
+	 */
 	public void replaceFooterPlaceholders(Map<String, String> replacements) {
 		for(String key: replacements.keySet()) {
 			replaceHeaderFooterPlaceholder(key, replacements.get(key), FOOTER);
 		}
 	}
 	
+	/**
+	 * Replaces a placeholder with the entire body of the specified document.
+	 * 
+	 * @param placeholder
+	 * @param document
+	 */
 	public void replacePlaceholderWithDocumentContent(String placeholder, WordprocessingMLPackage document) {
 		
 		MainDocumentPart documentPart = this.document.getMainDocumentPart();
