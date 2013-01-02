@@ -10,8 +10,6 @@ import org.docx4j.openpackaging.exceptions.Docx4JException;
 public class App {
     public static void main( String[] args ) {
 		String path = "./eksempler/";
-		String layout = path + "template.docx";
-		String contents = path + "IMMedInnhold.docx";
     	
         try {
         	DocxDocument docx1 = replaceStyledPlaceholders(path + "replaceStyledPlaceholdersTemplate.docx");
