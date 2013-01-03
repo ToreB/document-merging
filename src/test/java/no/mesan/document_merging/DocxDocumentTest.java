@@ -1,17 +1,11 @@
 package no.mesan.document_merging;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
 
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
 
-import no.mesan.document_merging.DocxDocument;
-
-import org.docx4j.openpackaging.exceptions.Docx4JException;
-import org.junit.Before;
 import org.junit.Test;
-import org.junit.experimental.categories.Categories.ExcludeCategory;
 
 public class DocxDocumentTest {
 	private DocxDocument doc;
